@@ -1,1 +1,201 @@
-<!doctype html><html><body><h1>GameFromChatgpt</h1><p>Game file is being prepared.</p></body></html>
+<!doctype html>
+<html lang="sv">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+<title>Swipe Ball – Time Challenge</title>
+<style>
+html,body{margin:0;height:100%;overflow:hidden;background:#61bdfa;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+#wrap{height:100%;display:flex;align-items:center;justify-content:center}
+canvas{display:block;max-width:100vw;max-height:100vh;touch-action:none}
+</style>
+</head>
+<body>
+<div id="wrap"><canvas id="game" width="720" height="1280"></canvas></div>
+<script>
+const c=document.getElementById("game"),ctx=c.getContext("2d");
+const W=720,H=1280,TAU=Math.PI*2;
+const BALL_R=24,START={x:360,y:1115};
+let ball={x:START.x,y:START.y,vx:0,vy:0};
+let dragging=false,dragStart={x:0,y:0},dragNow={x:0,y:0},shotRunning=false;
+let score=0;
+let best=1230;
+let timeLeft=60.0;
+let gameOver=false;
+let timeNow=0;
+const GRAVITY=285,AIR_DRAG=.998,WALL_BOUNCE=.8,TARGET_BOUNCE=.73,MAX_SPEED=1250;
+const TARGET_LIFE=3.0,SPAWN_EVERY=.72,MAX_TARGETS=5;
+const TIME_TARGET_LIFE=3.0,TIME_SPAWN_EVERY=5.2,MAX_TIME_TARGETS=2;
+const TYPES=[
+{points:25,radius:70,weight:30,c1:"#53dfff",c2:"#0664eb",halo:"#7ef0ff"},
+{points:50,radius:58,weight:25,c1:"#e78fff",c2:"#7522e8",halo:"#e0a2ff"},
+{points:100,radius:47,weight:21,c1:"#ffed5f",c2:"#dfa000",halo:"#ffec76"},
+{points:250,radius:37,weight:15,c1:"#78ee9a",c2:"#0aab58",halo:"#71f4b3"},
+{points:500,radius:28,weight:9,c1:"#ff7c87",c2:"#d91d35",halo:"#ff9cab"}
+];
+let targets=[],spawnTimer=0;
+let timeTargets=[],timeSpawnTimer=0;
+let zeps=[
+{x:-170,y:305,w:210,h:112,vx:46},
+{x:680,y:430,w:205,h:112,vx:-42}
+];
+let zTimer=0;
+function resize(){
+let w=innerWidth,h=innerHeight,r=W/H;
+if(w/h>r) w=h*r; else h=w/r;
+c.style.width=w+"px"; c.style.height=h+"px";
+}
+addEventListener("resize",resize);resize();
+function pos(e){
+const r=c.getBoundingClientRect();
+return {x:(e.clientX-r.left)*W/r.width,y:(e.clientY-r.top)*H/r.height};
+}
+c.addEventListener("pointerdown",e=>{
+if(gameOver){restartGame();return;}
+const p=pos(e);
+if(!shotRunning&&Math.hypot(p.x-ball.x,p.y-ball.y)<105){
+dragging=true;dragStart=p;dragNow=p;
+c.setPointerCapture?.(e.pointerId);
+}
+});
+c.addEventListener("pointermove",e=>{if(dragging)dragNow=pos(e)});
+c.addEventListener("pointerup",e=>{
+if(!dragging)return;
+dragNow=pos(e);dragging=false;launch();
+});
+function restartGame(){
+score=0;timeLeft=60;gameOver=false;shotRunning=false;dragging=false;
+ball.x=START.x;ball.y=START.y;ball.vx=0;ball.vy=0;
+targets=[];timeTargets=[];spawnTimer=0;timeSpawnTimer=0;
+}
+function launch(){
+if(gameOver)return;
+const dx=dragNow.x-dragStart.x,dy=dragNow.y-dragStart.y,l=Math.hypot(dx,dy);
+if(dy<-28&&l>30){
+const nx=dx/l,ny=dy/l,p=Math.min(l,430),s=420+p*2;
+ball.vx=nx*s;ball.vy=ny*s;
+const sp=Math.hypot(ball.vx,ball.vy);
+if(sp>MAX_SPEED){ball.vx*=MAX_SPEED/sp;ball.vy*=MAX_SPEED/sp}
+shotRunning=true;
+}
+}
+function chooseType(){
+let sum=TYPES.reduce((a,t)=>a+t.weight,0),r=Math.random()*sum;
+for(const t of TYPES){r-=t.weight;if(r<=0)return t}
+return TYPES[0];
+}
+function spawnTarget(){
+if(targets.length>=MAX_TARGETS)return;
+const t=chooseType(),m=t.radius+25;
+targets.push({...t,x:m+Math.random()*(W-2*m),y:155+Math.random()*510,age:0,phase:Math.random()*TAU,hit:false});
+}
+function spawnTimeTarget(){
+if(timeTargets.length>=MAX_TIME_TARGETS)return;
+const r=42,m=r+30;
+timeTargets.push({x:m+Math.random()*(W-2*m),y:180+Math.random()*520,radius:r,age:0,phase:Math.random()*TAU,hit:false,seconds:10});
+}
+function spawnZep(){
+const fromLeft=Math.random()<.5;
+const speed=42+Math.random()*18;
+zeps.push({x:fromLeft?-240:W+20,y:245+Math.random()*500,w:205+Math.random()*25,h:110+Math.random()*16,vx:fromLeft?speed:-speed});
+}
+function resetBall(){ball.x=START.x;ball.y=START.y;ball.vx=0;ball.vy=0;shotRunning=false;}
+function hitTarget(t){
+const life=Math.max(0,1-t.age/TARGET_LIFE),r=t.radius*life;if(r<2)return;
+const dx=ball.x-t.x,dy=ball.y-t.y,d=Math.hypot(dx,dy),md=BALL_R+r;
+if(d<md&&d>0){const nx=dx/d,ny=dy/d;ball.x=t.x+nx*md;ball.y=t.y+ny*md;const dot=ball.vx*nx+ball.vy*ny;
+if(dot<0){ball.vx-=(1+TARGET_BOUNCE)*dot*nx;ball.vy-=(1+TARGET_BOUNCE)*dot*ny;}
+if(!t.hit){t.hit=true;score+=t.points;best=Math.max(best,score);}}
+}
+function hitTimeTarget(t){
+const life=Math.max(0,1-t.age/TIME_TARGET_LIFE),r=t.radius*life;if(r<2)return;
+const dx=ball.x-t.x,dy=ball.y-t.y,d=Math.hypot(dx,dy),md=BALL_R+r;
+if(d<md&&d>0){const nx=dx/d,ny=dy/d;ball.x=t.x+nx*md;ball.y=t.y+ny*md;const dot=ball.vx*nx+ball.vy*ny;
+if(dot<0){ball.vx-=(1+TARGET_BOUNCE)*dot*nx;ball.vy-=(1+TARGET_BOUNCE)*dot*ny;}
+if(!t.hit){t.hit=true;timeLeft+=t.seconds;}}
+}
+function hitZep(z){
+const cx=z.x+z.w/2,cy=z.y+z.h/2,rx=z.w*.44,ry=z.h*.33;
+const dx=ball.x-cx,dy=ball.y-cy,nx0=dx/(rx+BALL_R),ny0=dy/(ry+BALL_R);
+if(nx0*nx0+ny0*ny0<1){const l=Math.hypot(nx0,ny0)||1,nx=nx0/l,ny=ny0/l;ball.x+=nx*10;ball.y+=ny*10;
+const dot=ball.vx*nx+ball.vy*ny;if(dot<0){ball.vx-=(1+0.78)*dot*nx;ball.vy-=(1+0.78)*dot*ny;}ball.vx+=z.vx*.22;}
+}
+function update(dt){
+if(gameOver)return;
+timeNow+=dt;timeLeft-=dt;
+if(timeLeft<=0){timeLeft=0;gameOver=true;shotRunning=false;ball.vx=0;ball.vy=0;return;}
+spawnTimer+=dt;if(spawnTimer>=SPAWN_EVERY){spawnTimer-=SPAWN_EVERY;spawnTarget();}
+timeSpawnTimer+=dt;if(timeSpawnTimer>=TIME_SPAWN_EVERY){timeSpawnTimer-=TIME_SPAWN_EVERY;spawnTimeTarget();}
+targets.forEach(t=>t.age+=dt);targets=targets.filter(t=>t.age<TARGET_LIFE&&!t.hit);
+timeTargets.forEach(t=>t.age+=dt);timeTargets=timeTargets.filter(t=>t.age<TIME_TARGET_LIFE&&!t.hit);
+zTimer+=dt;if(zTimer>4.4){zTimer=0;spawnZep();}
+for(const z of zeps){z.x+=z.vx*dt;}
+zeps=zeps.filter(z=>z.x>-320&&z.x<W+320);
+if(!shotRunning)return;
+ball.vy+=GRAVITY*dt;ball.x+=ball.vx*dt;ball.y+=ball.vy*dt;
+const d=Math.pow(AIR_DRAG,dt*60);ball.vx*=d;ball.vy*=d;
+if(ball.x<BALL_R){ball.x=BALL_R;ball.vx=Math.abs(ball.vx)*WALL_BOUNCE;}
+if(ball.x>W-BALL_R){ball.x=W-BALL_R;ball.vx=-Math.abs(ball.vx)*WALL_BOUNCE;}
+if(ball.y<BALL_R+75){ball.y=BALL_R+75;ball.vy=Math.abs(ball.vy)*WALL_BOUNCE;}
+zeps.forEach(hitZep);targets.forEach(hitTarget);timeTargets.forEach(hitTimeTarget);
+if(ball.y>H-108&&ball.vy>0)resetBall();
+}
+function rounded(x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();}
+function drawHUD(){
+ctx.fillStyle="rgba(13,58,105,.82)";rounded(14,18,165,92,24);ctx.fill();rounded(541,18,165,92,24);ctx.fill();
+ctx.fillStyle="rgba(13,58,105,.88)";rounded(232,18,255,92,24);ctx.fill();
+ctx.fillStyle="#fff";ctx.textAlign="left";ctx.font="700 21px system-ui";ctx.fillText("Poäng",31,47);ctx.font="800 38px system-ui";ctx.fillText(score,31,89);
+ctx.font="700 21px system-ui";ctx.fillText("Bästa",558,47);ctx.font="800 38px system-ui";ctx.fillText(best,558,89);
+const cx=267,cy=64;ctx.strokeStyle="#fff";ctx.lineWidth=4;ctx.beginPath();ctx.arc(cx,cy,19,0,TAU);ctx.stroke();ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(cx,cy-11);ctx.moveTo(cx,cy);ctx.lineTo(cx+8,cy+5);ctx.stroke();
+const sec=Math.ceil(timeLeft),mm=Math.floor(sec/60),ss=sec%60,txt=String(mm).padStart(2,"0")+":"+String(ss).padStart(2,"0");
+ctx.fillStyle="#fff";ctx.font="800 34px system-ui";ctx.textAlign="center";ctx.fillText(txt,370,77);
+ctx.strokeStyle="#fff";ctx.lineWidth=3;ctx.beginPath();ctx.arc(690,63,27,0,TAU);ctx.stroke();ctx.fillStyle="#fff";ctx.fillRect(683,51,5,24);ctx.fillRect(694,51,5,24);
+}
+function drawTarget(t){
+const life=Math.max(0,1-t.age/TARGET_LIFE),r=t.radius*life;if(r<1)return;
+ctx.save();ctx.globalAlpha=Math.max(.14,life);ctx.shadowColor=t.halo;ctx.shadowBlur=24;ctx.strokeStyle=t.halo;ctx.lineWidth=4;ctx.beginPath();ctx.arc(t.x,t.y,r+11,0,TAU);ctx.stroke();ctx.shadowBlur=0;
+ctx.strokeStyle="rgba(255,255,255,.85)";ctx.lineWidth=3;for(let k=0;k<4;k++){ctx.beginPath();ctx.arc(t.x,t.y,r+7,t.phase+timeNow*.9+k*TAU/4,t.phase+timeNow*.9+k*TAU/4+.72);ctx.stroke();}
+const g=ctx.createRadialGradient(t.x-r*.28,t.y-r*.34,r*.05,t.x,t.y,r);g.addColorStop(0,"#fff");g.addColorStop(.18,t.c1);g.addColorStop(.7,t.c2);g.addColorStop(1,"#173044");ctx.fillStyle=g;ctx.beginPath();ctx.arc(t.x,t.y,r,0,TAU);ctx.fill();
+ctx.fillStyle="rgba(255,255,255,.42)";ctx.beginPath();ctx.ellipse(t.x-r*.2,t.y-r*.35,r*.36,r*.14,-.35,0,TAU);ctx.fill();
+if(r>17){ctx.fillStyle="#fff";ctx.font=`800 ${Math.max(16,Math.min(34,r*.66))}px system-ui`;ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillText(t.points,t.x,t.y);}ctx.restore();
+}
+function drawTimeTarget(t){
+const life=Math.max(0,1-t.age/TIME_TARGET_LIFE),r=t.radius*life;if(r<1)return;
+ctx.save();ctx.globalAlpha=Math.max(.15,life);ctx.shadowColor="#62ddff";ctx.shadowBlur=26;ctx.strokeStyle="#6be7ff";ctx.lineWidth=5;ctx.beginPath();ctx.arc(t.x,t.y,r+12,0,TAU);ctx.stroke();ctx.shadowBlur=0;
+ctx.strokeStyle="rgba(255,255,255,.9)";ctx.lineWidth=3;for(let k=0;k<4;k++){ctx.beginPath();ctx.arc(t.x,t.y,r+8,t.phase+timeNow*1.1+k*TAU/4,t.phase+timeNow*1.1+k*TAU/4+.72);ctx.stroke();}
+const g=ctx.createRadialGradient(t.x-r*.26,t.y-r*.3,r*.05,t.x,t.y,r);g.addColorStop(0,"#ffffff");g.addColorStop(.2,"#69e8ff");g.addColorStop(.65,"#1197eb");g.addColorStop(1,"#0450b2");ctx.fillStyle=g;ctx.beginPath();ctx.arc(t.x,t.y,r,0,TAU);ctx.fill();
+if(r>22){ctx.strokeStyle="#fff";ctx.lineWidth=Math.max(2,r*.08);ctx.beginPath();ctx.arc(t.x,t.y-r*.15,r*.24,0,TAU);ctx.stroke();ctx.beginPath();ctx.moveTo(t.x,t.y-r*.15);ctx.lineTo(t.x,t.y-r*.30);ctx.moveTo(t.x,t.y-r*.15);ctx.lineTo(t.x+r*.10,t.y-r*.08);ctx.stroke();ctx.fillStyle="#fff";ctx.font=`800 ${Math.max(14,Math.min(26,r*.45))}px system-ui`;ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillText("+10s",t.x,t.y+r*.34);}ctx.restore();
+}
+function drawBall(){
+const g=ctx.createRadialGradient(ball.x-8,ball.y-10,3,ball.x,ball.y,BALL_R);g.addColorStop(0,"#fff");g.addColorStop(.2,"#dce6ed");g.addColorStop(.48,"#67747e");g.addColorStop(.76,"#202c35");g.addColorStop(1,"#080d12");
+ctx.fillStyle=g;ctx.shadowColor="rgba(0,0,0,.35)";ctx.shadowBlur=8;ctx.beginPath();ctx.arc(ball.x,ball.y,BALL_R,0,TAU);ctx.fill();ctx.shadowBlur=0;ctx.strokeStyle="#fff";ctx.lineWidth=1.5;ctx.stroke();
+}
+function drawZeppelin(z){
+const r=z.vx>0;ctx.save();ctx.translate(z.x+z.w/2,z.y+z.h/2);if(!r)ctx.scale(-1,1);
+ctx.fillStyle="#f5f5f5";ctx.strokeStyle="#263746";ctx.lineWidth=4;ctx.beginPath();ctx.ellipse(0,-8,z.w*.43,z.h*.28,0,0,TAU);ctx.fill();ctx.stroke();
+ctx.fillStyle="#d84545";ctx.beginPath();ctx.ellipse(-20,-8,z.w*.28,z.h*.25,0,Math.PI*.58,Math.PI*1.42);ctx.fill();
+ctx.fillStyle="#783d22";rounded(-45,18,90,26,6);ctx.fill();ctx.fillStyle="#e0ad45";ctx.beginPath();ctx.moveTo(z.w*.38,-2);ctx.lineTo(z.w*.48,-22);ctx.lineTo(z.w*.46,10);ctx.closePath();ctx.fill();ctx.restore();
+}
+function startZone(){
+const g=ctx.createLinearGradient(0,1110,0,H);g.addColorStop(0,"rgba(10,52,88,.15)");g.addColorStop(1,"rgba(5,30,60,.92)");ctx.fillStyle=g;ctx.beginPath();ctx.moveTo(0,1170);ctx.quadraticCurveTo(W/2,1118,W,1170);ctx.lineTo(W,H);ctx.lineTo(0,H);ctx.closePath();ctx.fill();
+if(!shotRunning&&!dragging&&!gameOver){ctx.fillStyle="rgba(10,43,77,.80)";rounded(170,1192,380,58,23);ctx.fill();ctx.fillStyle="#fff";ctx.textAlign="center";ctx.font="700 24px system-ui";ctx.fillText("Svep uppåt för att skjuta!",W/2,1230);}
+}
+function aim(){
+if(!dragging||gameOver)return;
+const dx=dragNow.x-dragStart.x,dy=dragNow.y-dragStart.y,l=Math.hypot(dx,dy)||1,nx=dx/l,ny=dy/l,len=Math.min(l,215);ctx.fillStyle="#fff";
+for(let d=35;d<len-20;d+=27){ctx.beginPath();ctx.arc(ball.x+nx*d,ball.y+ny*d,5,0,TAU);ctx.fill();}
+}
+function drawGameOver(){
+if(!gameOver)return;ctx.fillStyle="rgba(3,18,34,.74)";ctx.fillRect(0,0,W,H);ctx.fillStyle="rgba(10,44,80,.94)";rounded(90,430,540,330,34);ctx.fill();ctx.fillStyle="#fff";ctx.textAlign="center";ctx.font="800 48px system-ui";ctx.fillText("GAME OVER",W/2,515);ctx.font="700 26px system-ui";ctx.fillText("Din poäng",W/2,575);ctx.font="800 58px system-ui";ctx.fillText(score,W/2,645);ctx.font="600 22px system-ui";ctx.fillText("Tryck för att spela igen",W/2,710);
+}
+function draw(){
+const sky=ctx.createLinearGradient(0,0,0,H);sky.addColorStop(0,"#55b8f5");sky.addColorStop(1,"#d7f4ff");ctx.fillStyle=sky;ctx.fillRect(0,0,W,H);
+for(let i=0;i<9;i++){const x=(i*137+80)%W,y=150+(i*173)%780;ctx.fillStyle="rgba(255,255,255,.55)";ctx.beginPath();ctx.arc(x,y,38,0,TAU);ctx.arc(x+38,y+5,28,0,TAU);ctx.arc(x-34,y+8,24,0,TAU);ctx.fill();}
+zeps.forEach(drawZeppelin);targets.forEach(drawTarget);timeTargets.forEach(drawTimeTarget);drawHUD();startZone();aim();drawBall();drawGameOver();
+}
+let last=performance.now();
+function loop(now){const dt=Math.min((now-last)/1000,.033);last=now;update(dt);draw();requestAnimationFrame(loop);}
+spawnTarget();spawnTarget();spawnTarget();spawnTimeTarget();requestAnimationFrame(loop);
+</script>
+</body>
+</html>
