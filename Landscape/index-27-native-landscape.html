@@ -1,0 +1,224 @@
+<!doctype html>
+<html lang="sv">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="screen-orientation" content="landscape">
+<title>Zeppeliner – Native Landscape</title>
+<style>
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#61bdfa;touch-action:none;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+#game{position:fixed;inset:0;width:100vw;height:100vh;display:block;background:#61bdfa;touch-action:none}
+#hud{position:fixed;inset:0;pointer-events:none;color:#fff;text-shadow:0 2px 5px rgba(0,0,0,.45);font-weight:900}
+#score{position:absolute;left:max(18px,env(safe-area-inset-left));top:max(12px,env(safe-area-inset-top));font-size:clamp(22px,3.2vw,44px)}
+#time{position:absolute;right:max(18px,env(safe-area-inset-right));top:max(12px,env(safe-area-inset-top));font-size:clamp(22px,3.2vw,44px)}
+#title{position:absolute;left:50%;top:4%;transform:translateX(-50%);font-size:clamp(16px,2.2vw,30px);letter-spacing:.04em;opacity:.9;white-space:nowrap}
+#startCard,#gameOverCard{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);z-index:5;text-align:center;color:#fff;background:rgba(13,57,94,.88);border:3px solid rgba(255,255,255,.35);border-radius:24px;padding:20px 28px;box-shadow:0 14px 38px rgba(0,0,0,.28);min-width:min(72vw,460px)}
+#startCard h1,#gameOverCard h1{margin:0 0 8px;font-size:clamp(28px,5vw,56px)}
+#startCard p,#gameOverCard p{margin:8px 0;font-size:clamp(15px,2.3vw,24px)}
+button{margin-top:12px;border:0;border-radius:999px;padding:12px 24px;background:#ffd84a;color:#17324d;font:900 clamp(16px,2.4vw,24px) system-ui;box-shadow:0 5px 14px rgba(0,0,0,.24)}
+#gameOverCard{display:none}
+</style>
+</head>
+<body>
+<canvas id="game"></canvas>
+<div id="hud"><div id="score">0 poäng</div><div id="title">SWIPE BALL · LANDSCAPE</div><div id="time">30.0 s</div></div>
+<div id="startCard"><h1>ZEppeliner</h1><p>Svep bollen genom poängcirklarna.</p><p>Blå tidsringar ger +5 sekunder.</p><button id="startBtn">STARTA</button></div>
+<div id="gameOverCard"><h1>GAME OVER</h1><p id="finalScore">0 poäng</p><button id="againBtn">SPELA IGEN</button></div>
+<script>
+(()=>{
+'use strict';
+const canvas=document.getElementById('game'),ctx=canvas.getContext('2d');
+const scoreEl=document.getElementById('score'),timeEl=document.getElementById('time');
+const startCard=document.getElementById('startCard'),gameOverCard=document.getElementById('gameOverCard'),finalScoreEl=document.getElementById('finalScore');
+const startBtn=document.getElementById('startBtn'),againBtn=document.getElementById('againBtn');
+let W=0,H=0,dpr=1,running=false,last=performance.now(),timeLeft=30,score=0;
+let pointerDown=false,pointerId=null,swipeStart=null,swipeNow=null;
+const TAU=Math.PI*2;
+
+function tryLandscape(){
+  try{ if(screen.orientation&&screen.orientation.lock) screen.orientation.lock('landscape').catch(()=>{}); }catch(e){}
+}
+tryLandscape();
+addEventListener('pointerdown',tryLandscape,{once:true,passive:true});
+
+function resize(){
+  dpr=Math.min(2,window.devicePixelRatio||1);
+  W=Math.max(1,innerWidth); H=Math.max(1,innerHeight);
+  canvas.width=Math.round(W*dpr); canvas.height=Math.round(H*dpr);
+  canvas.style.width=W+'px'; canvas.style.height=H+'px';
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  const r=Math.max(12,Math.min(W,H)*.025);
+  ball.r=r;
+  if(!running){ball.x=W*.5;ball.y=H*.78;}
+}
+addEventListener('resize',resize,{passive:true});
+addEventListener('orientationchange',()=>setTimeout(resize,80),{passive:true});
+
+// EXACT SAME ZEPPELIN SPRITES AS THE ORIGINAL GAME.
+const redZep=new Image(),blueZep=new Image();
+let spritesReady=false;
+async function loadOriginalSprites(){
+  try{
+    const html=await fetch('../ZeppelinerWithHighscore/index-22.html',{cache:'force-cache'}).then(r=>{if(!r.ok)throw new Error(r.status);return r.text()});
+    const red=html.match(/redZep\.src\s*=\s*["'](data:image\/png;base64,[^"']+)["']/);
+    const blue=html.match(/blueZep\.src\s*=\s*["'](data:image\/png;base64,[^"']+)["']/);
+    if(!red||!blue)throw new Error('sprite data not found');
+    redZep.src=red[1]; blueZep.src=blue[1];
+    await Promise.all([redZep.decode().catch(()=>{}),blueZep.decode().catch(()=>{})]);
+    spritesReady=true;
+  }catch(e){ console.warn('Kunde inte läsa originalspritarna',e); }
+}
+loadOriginalSprites();
+
+const ball={x:0,y:0,r:18,vx:0,vy:0,active:false};
+const targets=[]; const zeppelins=[]; const pops=[];
+const pointValues=[25,50,100,250,500];
+
+function rand(a,b){return a+Math.random()*(b-a)}
+function clamp(v,a,b){return Math.max(a,Math.min(b,v))}
+function choose(a){return a[(Math.random()*a.length)|0]}
+
+function makeTarget(timeTarget=false){
+  const minR=Math.max(25,Math.min(W,H)*.05), maxR=Math.max(minR+4,Math.min(W,H)*.075);
+  const r=rand(minR,maxR);
+  const pad=Math.max(22,Math.min(W,H)*.045);
+  const top=pad+Math.max(35,H*.08), bottom=Math.max(top+20,H-pad-r);
+  let x=rand(pad+r,W-pad-r), y=rand(top+r,bottom);
+  for(let tries=0;tries<30;tries++){
+    let ok=true;
+    for(const t of targets) if(Math.hypot(x-t.x,y-t.y)<r+t.r+18){ok=false;break}
+    if(ok)break;
+    x=rand(pad+r,W-pad-r); y=rand(top+r,bottom);
+  }
+  targets.push({x,y,r,time:timeTarget,value:timeTarget?0:choose(pointValues),pulse:Math.random()*TAU});
+}
+function refillTargets(){
+  while(targets.filter(t=>!t.time).length<7)makeTarget(false);
+  while(targets.filter(t=>t.time).length<2)makeTarget(true);
+}
+
+function spawnZeppelin(){
+  if(zeppelins.length>=4)return;
+  const fromLeft=Math.random()<.5;
+  const img=Math.random()<.5?redZep:blueZep;
+  const h=rand(Math.max(42,H*.09),Math.max(58,H*.15));
+  const ratio=(img.naturalWidth&&img.naturalHeight)?img.naturalWidth/img.naturalHeight:2.6;
+  const w=h*ratio;
+  const y=rand(H*.16,H*.68);
+  const speed=rand(Math.max(55,W*.045),Math.max(90,W*.085));
+  // Starts COMPLETELY outside the visible landscape canvas.
+  const x=fromLeft ? -w-40 : W+w+40;
+  zeppelins.push({x,y,w,h,vx:fromLeft?speed:-speed,img,flip:!fromLeft});
+}
+let zepTimer=.3;
+
+function resetGame(){
+  score=0;timeLeft=30;targets.length=0;zeppelins.length=0;pops.length=0;
+  ball.x=W*.5;ball.y=H*.78;ball.vx=0;ball.vy=0;ball.active=false;
+  refillTargets();zepTimer=.25;scoreEl.textContent='0 poäng';timeEl.textContent='30.0 s';
+}
+function startGame(){
+  tryLandscape();resetGame();running=true;last=performance.now();startCard.style.display='none';gameOverCard.style.display='none';
+}
+function endGame(){
+  running=false;ball.active=false;finalScoreEl.textContent=score.toLocaleString('sv-SE')+' poäng';gameOverCard.style.display='block';
+}
+startBtn.addEventListener('click',startGame);againBtn.addEventListener('click',startGame);
+
+function canvasPos(e){return{x:e.clientX,y:e.clientY}}
+canvas.addEventListener('pointerdown',e=>{
+  if(!running)return;
+  const p=canvasPos(e);
+  const hit=Math.hypot(p.x-ball.x,p.y-ball.y)<=ball.r*2.2;
+  if(hit&&!ball.active){pointerDown=true;pointerId=e.pointerId;swipeStart=p;swipeNow=p;canvas.setPointerCapture?.(e.pointerId)}
+});
+canvas.addEventListener('pointermove',e=>{if(pointerDown&&e.pointerId===pointerId)swipeNow=canvasPos(e)});
+function release(e){
+  if(!pointerDown||e.pointerId!==pointerId)return;
+  swipeNow=canvasPos(e);pointerDown=false;
+  const dx=swipeNow.x-swipeStart.x,dy=swipeNow.y-swipeStart.y,mag=Math.hypot(dx,dy);
+  if(mag>12){const speed=clamp(mag*5.0,260,1050);ball.vx=dx/mag*speed;ball.vy=dy/mag*speed;ball.active=true}
+}
+canvas.addEventListener('pointerup',release);canvas.addEventListener('pointercancel',()=>{pointerDown=false});
+
+function circleHit(cx,cy,cr,rx,ry,rw,rh){
+  const qx=clamp(cx,rx,rx+rw),qy=clamp(cy,ry,ry+rh);return (cx-qx)**2+(cy-qy)**2<cr*cr;
+}
+function pop(x,y,text,time=false){pops.push({x,y,text,life:1,time})}
+
+function update(dt){
+  if(!running)return;
+  timeLeft-=dt;if(timeLeft<=0){timeLeft=0;endGame();return}
+  timeEl.textContent=timeLeft.toFixed(1)+' s';scoreEl.textContent=score.toLocaleString('sv-SE')+' poäng';
+  zepTimer-=dt;if(zepTimer<=0){spawnZeppelin();zepTimer=rand(1.6,3.0)}
+  for(let i=zeppelins.length-1;i>=0;i--){
+    const z=zeppelins[i];z.x+=z.vx*dt;
+    if(z.vx>0&&z.x>W+z.w+60||z.vx<0&&z.x<-z.w*2-60)zeppelins.splice(i,1);
+  }
+  if(ball.active){
+    ball.x+=ball.vx*dt;ball.y+=ball.vy*dt;
+    ball.vy+=120*dt;
+    const damp=.997**(dt*60);ball.vx*=damp;ball.vy*=damp;
+    if(ball.x-ball.r<0){ball.x=ball.r;ball.vx=Math.abs(ball.vx)*.92}
+    if(ball.x+ball.r>W){ball.x=W-ball.r;ball.vx=-Math.abs(ball.vx)*.92}
+    if(ball.y-ball.r<0){ball.y=ball.r;ball.vy=Math.abs(ball.vy)*.92}
+    if(ball.y+ball.r>H){ball.y=H-ball.r;ball.vy=-Math.abs(ball.vy)*.88}
+    for(let i=targets.length-1;i>=0;i--){
+      const t=targets[i];if(Math.hypot(ball.x-t.x,ball.y-t.y)<ball.r+t.r){
+        if(t.time){timeLeft+=5;pop(t.x,t.y,'+5 s',true)}else{score+=t.value;pop(t.x,t.y,'+'+t.value,false)}
+        targets.splice(i,1);refillTargets();
+      }
+    }
+    for(const z of zeppelins){
+      if(circleHit(ball.x,ball.y,ball.r,z.x,z.y,z.w,z.h)){
+        const cx=z.x+z.w/2,cy=z.y+z.h/2,dx=ball.x-cx,dy=ball.y-cy,m=Math.hypot(dx,dy)||1;
+        const sp=Math.max(380,Math.hypot(ball.vx,ball.vy));ball.vx=dx/m*sp;ball.vy=dy/m*sp;
+        ball.x+=dx/m*8;ball.y+=dy/m*8;
+      }
+    }
+    if(Math.hypot(ball.vx,ball.vy)<55&&ball.y>H*.65){ball.active=false;ball.vx=ball.vy=0;ball.x=W*.5;ball.y=H*.78}
+  }
+  for(let i=pops.length-1;i>=0;i--){pops[i].life-=dt;if(pops[i].life<=0)pops.splice(i,1)}
+  for(const t of targets)t.pulse+=dt*2.2;
+}
+
+function drawTarget(t){
+  const p=1+Math.sin(t.pulse)*.035,r=t.r*p;
+  ctx.save();ctx.translate(t.x,t.y);
+  if(t.time){
+    ctx.fillStyle='rgba(14,93,160,.92)';ctx.strokeStyle='#8feaff';ctx.lineWidth=Math.max(5,t.r*.13);
+    ctx.beginPath();ctx.arc(0,0,r,0,TAU);ctx.fill();ctx.stroke();
+    ctx.strokeStyle='#fff';ctx.lineWidth=Math.max(3,t.r*.07);ctx.beginPath();ctx.arc(0,0,t.r*.43,0,TAU);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(0,-t.r*.27);ctx.moveTo(0,0);ctx.lineTo(t.r*.20,t.r*.12);ctx.stroke();
+    ctx.fillStyle='#fff';ctx.font=`900 ${Math.max(13,t.r*.33)}px system-ui`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('+5s',0,t.r*.72);
+  }else{
+    const v=t.value;let fill='#ffd84a',stroke='#fff2a4';if(v>=250){fill='#ff8b38';stroke='#ffe0a6'}if(v>=500){fill='#ff596e';stroke='#ffd2d9'}
+    ctx.fillStyle=fill;ctx.strokeStyle=stroke;ctx.lineWidth=Math.max(5,t.r*.12);ctx.beginPath();ctx.arc(0,0,r,0,TAU);ctx.fill();ctx.stroke();
+    ctx.fillStyle='#17324d';ctx.font=`900 ${Math.max(14,t.r*.43)}px system-ui`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(String(v),0,1);
+  }
+  ctx.restore();
+}
+function drawZeppelin(z){
+  if(spritesReady&&z.img.complete&&z.img.naturalWidth){
+    ctx.save();if(z.flip){ctx.translate(z.x+z.w,z.y);ctx.scale(-1,1);ctx.drawImage(z.img,0,0,z.w,z.h)}else ctx.drawImage(z.img,z.x,z.y,z.w,z.h);ctx.restore();
+  }
+}
+function drawBall(){
+  const g=ctx.createRadialGradient(ball.x-ball.r*.3,ball.y-ball.r*.35,ball.r*.12,ball.x,ball.y,ball.r);
+  g.addColorStop(0,'#fff');g.addColorStop(.18,'#e8f8ff');g.addColorStop(.55,'#48b7ff');g.addColorStop(1,'#09579c');
+  ctx.fillStyle=g;ctx.strokeStyle='#fff';ctx.lineWidth=Math.max(2,ball.r*.14);ctx.beginPath();ctx.arc(ball.x,ball.y,ball.r,0,TAU);ctx.fill();ctx.stroke();
+}
+function draw(){
+  ctx.setTransform(dpr,0,0,dpr,0,0);ctx.clearRect(0,0,W,H);ctx.fillStyle='#61bdfa';ctx.fillRect(0,0,W,H);
+  for(const t of targets)drawTarget(t);
+  for(const z of zeppelins)drawZeppelin(z);
+  drawBall();
+  if(pointerDown&&swipeStart&&swipeNow){ctx.strokeStyle='rgba(255,255,255,.9)';ctx.lineWidth=4;ctx.setLineDash([10,8]);ctx.beginPath();ctx.moveTo(ball.x,ball.y);ctx.lineTo(swipeNow.x,swipeNow.y);ctx.stroke();ctx.setLineDash([])}
+  for(const p of pops){ctx.save();ctx.globalAlpha=Math.min(1,p.life*2);ctx.fillStyle=p.time?'#bff8ff':'#fff';ctx.font=`900 ${Math.max(20,Math.min(W,H)*.045)}px system-ui`;ctx.textAlign='center';ctx.fillText(p.text,p.x,p.y-(1-p.life)*42);ctx.restore()}
+}
+function loop(now){const dt=Math.min(.04,(now-last)/1000);last=now;update(dt);draw();requestAnimationFrame(loop)}
+resize();resetGame();requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>
