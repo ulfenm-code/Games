@@ -1,0 +1,11 @@
+{
+  "name": "Castle Duel",
+  "short_name": "Castle",
+  "description": "Castle Duel",
+  "start_url": "./castle_index_02.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "landscape",
+  "background_color": "#0a0d12",
+  "theme_color": "#0a0d12"
+}
