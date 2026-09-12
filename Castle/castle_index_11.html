@@ -1,0 +1,17 @@
+<!doctype html><html lang="sv"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Castle Duel v11</title></head><body style="margin:0;background:#0a0d12;color:white;font-family:system-ui"><div id="loading" style="padding:24px">Laddar Castle Duel…</div><script>
+(async()=>{
+ try{
+  let s=await (await fetch('castle_index_09.html',{cache:'no-store'})).text();
+  s=s.replaceAll('castle_index_09.html?match=','castle_index_11.html?match=');
+  s=s.replace("const cfg={maxPull:165,power:6.8,g:1250,bounce:.5,ground:785};","const cfg={maxPull:165,power:6.8,g:1250,bounce:.5,ground:785};const PHYS_STEP=1/120;let physAcc=0;");
+  s=s.replace("function resetShot(){let a=anchor();q.x=a.x;q.y=a.y;q.vx=q.vy=0;q.fly=false;q.shotTime=0}","function resetShot(){let a=anchor();q.x=a.x;q.y=a.y;q.vx=q.vy=0;q.fly=false;q.shotTime=0;physAcc=0}");
+  s=s.replace("resetShot();q.vx=Number(sh.vx);q.vy=Number(sh.vy);q.fly=true","resetShot();q.vx=Number(sh.vx);q.vy=Number(sh.vy);q.shotTime=0;physAcc=0;q.fly=true");
+  s=s.replace("q.vx=dx*cfg.power;q.vy=dy*cfg.power;q.fly=true;saveShot(deviceRole,q.vx,q.vy)","q.x=a.x;q.y=a.y;q.vx=dx*cfg.power;q.vy=dy*cfg.power;q.shotTime=0;physAcc=0;q.fly=true;saveShot(deviceRole,q.vx,q.vy)");
+  const oldUpdate="function update(dt){if(!started||paused)return;if(!q.fly){timeLeft-=dt;if(timeLeft<=0){nextTurn();return}}else{q.shotTime+=dt;q.vy+=cfg.g*dt;q.x+=q.vx*dt;q.y+=q.vy*dt;if(q.x-q.r<0){q.x=q.r;q.vx=Math.abs(q.vx)*cfg.bounce}if(q.x+q.r>VW){q.x=VW-q.r;q.vx=-Math.abs(q.vx)*cfg.bounce}if(q.y+q.r>cfg.ground){q.y=cfg.ground-q.r;if(Math.abs(q.vy)>75)q.vy=-Math.abs(q.vy)*cfg.bounce;else q.vy=0;q.vx*=.96}if((Math.abs(q.vx)<18&&Math.abs(q.vy)<18&&q.y+q.r>=cfg.ground-1)||q.shotTime>7)nextTurn()}}";
+  const newUpdate=`function stepShot(){q.shotTime+=PHYS_STEP;q.vy+=cfg.g*PHYS_STEP;q.x+=q.vx*PHYS_STEP;q.y+=q.vy*PHYS_STEP;if(q.x-q.r<0){q.x=q.r;q.vx=Math.abs(q.vx)*cfg.bounce}if(q.x+q.r>VW){q.x=VW-q.r;q.vx=-Math.abs(q.vx)*cfg.bounce}if(q.y+q.r>cfg.ground){q.y=cfg.ground-q.r;if(Math.abs(q.vy)>75)q.vy=-Math.abs(q.vy)*cfg.bounce;else q.vy=0;q.vx*=.96}if((Math.abs(q.vx)<18&&Math.abs(q.vy)<18&&q.y+q.r>=cfg.ground-1)||q.shotTime>7){if(deviceRole===turn+1)nextTurn();else{q.fly=false;physAcc=0}return false}return true}function update(dt){if(!started||paused)return;if(!q.fly){timeLeft-=dt;if(timeLeft<=0&&deviceRole===turn+1){nextTurn();return}}else{physAcc+=dt;let n=0;while(q.fly&&physAcc>=PHYS_STEP&&n<12){physAcc-=PHYS_STEP;if(!stepShot())break;n++}}}`;
+  if(!s.includes(oldUpdate)) throw new Error('Kunde inte hitta fysikkoden');
+  s=s.replace(oldUpdate,newUpdate);
+  document.open();document.write(s);document.close();
+ }catch(e){document.getElementById('loading').textContent='Kunde inte ladda spelet: '+e.message}
+})();
+</script></body></html>
