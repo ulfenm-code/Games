@@ -1,0 +1,252 @@
+<!doctype html>
+<html lang="sv">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="screen-orientation" content="landscape">
+<title>Zeppeliner – Landscape Expanded</title>
+<style>
+:root{
+  --game-w:1280;
+  --game-h:720;
+  --scale:1;
+}
+html,body{
+  margin:0;
+  width:100%;
+  height:100%;
+  overflow:hidden;
+  touch-action:none;
+  font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
+  background:
+    radial-gradient(circle at 50% 22%, rgba(255,241,184,.95) 0 80px, rgba(255,241,184,.20) 81px 180px, transparent 181px),
+    linear-gradient(180deg, #86d9ff 0%, #77cbff 42%, #8fd5ff 58%, #f1d39b 58.5%, #d8b06f 64%, #78b761 64.5%, #5c964c 100%);
+}
+#backdrop,
+#cloudLayer,
+#decorLayer,
+#foreground{
+  position:fixed;
+  inset:0;
+  pointer-events:none;
+}
+#backdrop::before,
+#backdrop::after{
+  content:"";
+  position:absolute;
+  left:-5%;
+  width:110%;
+  border-radius:50%;
+}
+#backdrop::before{
+  bottom:11%;
+  height:16%;
+  background:rgba(78,145,75,.42);
+}
+#backdrop::after{
+  bottom:4%;
+  height:18%;
+  background:rgba(61,121,61,.62);
+}
+.cloud{
+  position:absolute;
+  background:rgba(255,255,255,.88);
+  border-radius:999px;
+  filter:drop-shadow(0 8px 10px rgba(0,0,0,.08));
+}
+.cloud::before,
+.cloud::after{
+  content:"";
+  position:absolute;
+  background:inherit;
+  border-radius:inherit;
+}
+.cloud.c1{ width:170px; height:42px; left:5%; top:14%; }
+.cloud.c1::before{ width:55px; height:55px; left:18px; top:-22px; }
+.cloud.c1::after{ width:68px; height:68px; left:72px; top:-30px; }
+.cloud.c2{ width:210px; height:50px; right:8%; top:16%; }
+.cloud.c2::before{ width:62px; height:62px; left:24px; top:-24px; }
+.cloud.c2::after{ width:82px; height:82px; left:90px; top:-34px; }
+.cloud.c3{ width:145px; height:36px; left:16%; top:29%; opacity:.78; }
+.cloud.c3::before{ width:44px; height:44px; left:16px; top:-18px; }
+.cloud.c3::after{ width:54px; height:54px; left:64px; top:-22px; }
+.cloud.c4{ width:150px; height:36px; right:17%; top:31%; opacity:.72; }
+.cloud.c4::before{ width:42px; height:42px; left:15px; top:-17px; }
+.cloud.c4::after{ width:54px; height:54px; left:66px; top:-22px; }
+.zeppelin{
+  position:absolute;
+  width:210px;
+  height:68px;
+  background:linear-gradient(180deg, rgba(30,67,93,.95), rgba(23,45,63,.95));
+  border-radius:120px;
+  box-shadow:0 10px 20px rgba(0,0,0,.12);
+  opacity:.45;
+}
+.zeppelin::before{
+  content:"";
+  position:absolute;
+  width:46px;
+  height:18px;
+  left:82px;
+  bottom:-11px;
+  background:rgba(24,44,61,.92);
+  border-radius:0 0 10px 10px;
+}
+.zeppelin::after{
+  content:"";
+  position:absolute;
+  width:26px;
+  height:20px;
+  right:-10px;
+  top:24px;
+  background:rgba(24,44,61,.92);
+  clip-path:polygon(0 50%,100% 0,100% 100%);
+}
+.z1{ left:4.5%; top:50%; transform:scale(.72) rotate(-8deg); }
+.z2{ right:5%; top:49%; transform:scale(.88) rotate(6deg); }
+.sideGlow{
+  position:absolute;
+  top:0;
+  bottom:0;
+  width:16%;
+  background:linear-gradient(90deg, rgba(255,255,255,.12), transparent);
+}
+.sideGlow.right{ right:0; transform:scaleX(-1); }
+.sideGlow.left{ left:0; }
+#viewport{
+  position:fixed;
+  inset:0;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+#stage{
+  position:relative;
+  width:calc(var(--game-w) * 1px);
+  height:calc(var(--game-h) * 1px);
+  transform:scale(var(--scale));
+  transform-origin:center center;
+}
+#gameFrame{
+  position:absolute;
+  inset:0;
+  width:100%;
+  height:100%;
+  border:0;
+  border-radius:26px;
+  background:#61bdfa;
+  box-shadow:0 18px 38px rgba(0,0,0,.22), 0 0 0 8px rgba(255,255,255,.14);
+}
+#frameHighlight{
+  position:absolute;
+  inset:-10px;
+  border-radius:34px;
+  border:2px solid rgba(255,255,255,.26);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.45);
+}
+#foreground::before,
+#foreground::after{
+  content:"";
+  position:absolute;
+  bottom:-3%;
+  width:26%;
+  height:22%;
+  background:rgba(52,100,46,.55);
+  filter:blur(2px);
+  border-radius:48% 52% 0 0;
+}
+#foreground::before{ left:-4%; }
+#foreground::after{ right:-4%; }
+#rotateHint{
+  position:fixed;
+  inset:0;
+  display:none;
+  align-items:center;
+  justify-content:center;
+  background:rgba(10,24,42,.88);
+  color:#fff;
+  text-align:center;
+  z-index:50;
+  padding:24px;
+  box-sizing:border-box;
+}
+#rotateHintCard{
+  max-width:320px;
+  background:rgba(255,255,255,.10);
+  border:1px solid rgba(255,255,255,.18);
+  border-radius:22px;
+  padding:22px 20px;
+  box-shadow:0 14px 30px rgba(0,0,0,.28);
+}
+#rotateHintCard h1{
+  margin:0 0 10px;
+  font-size:26px;
+}
+#rotateHintCard p{
+  margin:0;
+  font-size:16px;
+  line-height:1.45;
+  color:rgba(255,255,255,.86);
+}
+body.portrait #rotateHint{ display:flex; }
+body.portrait #viewport{ filter:blur(5px) brightness(.78); }
+@media (max-width: 1100px){
+  .z1,.z2{ opacity:.34; }
+}
+</style>
+</head>
+<body>
+  <div id="backdrop"></div>
+  <div id="cloudLayer">
+    <div class="cloud c1"></div>
+    <div class="cloud c2"></div>
+    <div class="cloud c3"></div>
+    <div class="cloud c4"></div>
+  </div>
+  <div id="decorLayer">
+    <div class="sideGlow left"></div>
+    <div class="sideGlow right"></div>
+    <div class="zeppelin z1"></div>
+    <div class="zeppelin z2"></div>
+  </div>
+
+  <div id="viewport">
+    <div id="stage">
+      <iframe id="gameFrame" src="../ZeppelinerWithHighscore/index-23-landscape.html" title="Zeppeliner landscape"></iframe>
+      <div id="frameHighlight"></div>
+    </div>
+  </div>
+
+  <div id="foreground"></div>
+
+  <div id="rotateHint" aria-hidden="true">
+    <div id="rotateHintCard">
+      <h1>Vrid mobilen</h1>
+      <p>Spelet är anpassat för liggande läge. Rotera mobilen 90° för bästa upplevelse.</p>
+    </div>
+  </div>
+
+<script>
+(function(){
+  const root=document.documentElement;
+  const body=document.body;
+  const GAME_W=1280;
+  const GAME_H=720;
+
+  function fit(){
+    const vw=window.innerWidth;
+    const vh=window.innerHeight;
+    const isPortrait=vh>vw;
+    body.classList.toggle('portrait', isPortrait);
+    const pad=isPortrait ? 0 : 20;
+    const scale=Math.min((vw-pad*2)/GAME_W, (vh-pad*2)/GAME_H);
+    root.style.setProperty('--scale', Math.max(.1, scale).toString());
+  }
+
+  fit();
+  window.addEventListener('resize', fit, {passive:true});
+  window.addEventListener('orientationchange', ()=>setTimeout(fit,100), {passive:true});
+})();
+</script>
+</body>
+</html>
