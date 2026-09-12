@@ -1,0 +1,13 @@
+<!doctype html><html lang="sv"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Castle Duel v12</title></head><body style="margin:0;background:#0a0d12;color:white;font-family:system-ui"><div id="loading" style="padding:24px">Laddar Castle Duel…</div><script>
+(async()=>{
+ try{
+  let s=await (await fetch('castle_index_11.html',{cache:'no-store'})).text();
+  s=s.replaceAll('castle_index_11.html?match=','castle_index_12.html?match=');
+  const oldCode="if(turn===0&&hit(br,z)){paused=!paused;return}";
+  const newCode="if(hit(br,z)){paused=!paused;return}";
+  if(!s.includes(oldCode)) throw new Error('Kunde inte hitta pauskoden');
+  s=s.replace(oldCode,newCode);
+  document.open();document.write(s);document.close();
+ }catch(e){document.getElementById('loading').textContent='Kunde inte ladda spelet: '+e.message}
+})();
+</script></body></html>
