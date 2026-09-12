@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="sv">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="screen-orientation" content="landscape">
+<title>Zeppeliner – Landscape Scenic</title>
+<style>
+:root{
+  --scale:1;
+}
+html,body{
+  margin:0;
+  width:100%;
+  height:100%;
+  overflow:hidden;
+  touch-action:none;
+  font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
+}
+body{
+  background:
+    radial-gradient(circle at 18% 20%, rgba(255,255,255,.45) 0 5%, transparent 5.5%),
+    radial-gradient(circle at 30% 17%, rgba(255,255,255,.30) 0 4%, transparent 4.6%),
+    radial-gradient(circle at 44% 12%, rgba(255,245,210,.95) 0 8%, rgba(255,245,210,.25) 8.1%, transparent 13%),
+    linear-gradient(180deg, #5cc3ff 0%, #78d5ff 38%, #95dbff 56%, #b8e7ff 63%, #f0d39a 63.5%, #d8ba79 69%, #81c56a 69.4%, #56a34a 100%);
+}
+#scene,#viewport,#foregroundFog{position:fixed;inset:0;overflow:hidden;}
+.layer{position:absolute;inset:0;pointer-events:none;}
+.cloud{position:absolute;background:rgba(255,255,255,.94);border-radius:999px;filter:drop-shadow(0 12px 10px rgba(0,0,0,.08));}
+.cloud:before,.cloud:after{content:"";position:absolute;background:inherit;border-radius:inherit;}
+.cloud.c1{width:280px;height:70px;left:-40px;top:72px;opacity:.95}
+.cloud.c1:before{width:88px;height:88px;left:30px;top:-34px}.cloud.c1:after{width:116px;height:116px;left:118px;top:-54px}
+.cloud.c2{width:220px;height:56px;right:60px;top:92px;opacity:.86}.cloud.c2:before{width:72px;height:72px;left:20px;top:-26px}.cloud.c2:after{width:94px;height:94px;left:92px;top:-41px}
+.cloud.c3{width:160px;height:42px;left:18%;top:210px;opacity:.6}.cloud.c3:before{width:56px;height:56px;left:20px;top:-22px}.cloud.c3:after{width:64px;height:64px;left:72px;top:-26px}
+.cloud.c4{width:170px;height:44px;right:18%;top:250px;opacity:.55}.cloud.c4:before{width:58px;height:58px;left:16px;top:-22px}.cloud.c4:after{width:68px;height:68px;left:80px;top:-28px}
+.hill{position:absolute;left:-10%;width:120%;border-radius:50%;}
+.hill.back1{bottom:132px;height:230px;background:#6fbc5c;opacity:.95}
+.hill.back2{bottom:104px;height:200px;background:#5fb050;opacity:.98}
+.hill.front1{bottom:-42px;height:210px;background:#46903d}
+.hill.front2{bottom:-80px;height:180px;background:#397d33}
+.path{position:absolute;left:50%;transform:translateX(-50%);bottom:0;width:32%;height:34%;background:linear-gradient(180deg,#e9c98b 0%, #bf9357 100%);clip-path:polygon(47% 0,53% 0,68% 100%,32% 100%);opacity:.92}
+.grassPatch{position:absolute;bottom:34px;width:18%;height:14%;background:rgba(69,140,60,.92);border-radius:50% 50% 0 0;filter:blur(1px)}
+.grassPatch.g1{left:-2%}.grassPatch.g2{right:-1%}.grassPatch.g3{left:18%;width:14%;height:9%;bottom:52px;opacity:.75}.grassPatch.g4{right:20%;width:15%;height:10%;bottom:54px;opacity:.75}
+.zeppelin{position:absolute;width:210px;height:74px;background:linear-gradient(180deg,#435d7c 0%,#24384e 100%);border-radius:110px;box-shadow:0 16px 26px rgba(0,0,0,.18);opacity:.24;pointer-events:none;}
+.zeppelin:before{content:"";position:absolute;left:86px;bottom:-12px;width:42px;height:18px;background:#27415a;border-radius:0 0 10px 10px}
+.zeppelin:after{content:"";position:absolute;right:-12px;top:26px;width:26px;height:22px;background:#27415a;clip-path:polygon(0 50%,100% 0,100% 100%)}
+.zeppelin.left{left:-130px;top:52%;transform:rotate(-7deg)}
+.zeppelin.right{right:-150px;top:46%;transform:scale(.92) rotate(8deg)}
+#viewport{display:flex;align-items:center;justify-content:center;z-index:5}
+#stage{position:relative;width:1280px;height:720px;transform:scale(var(--scale));transform-origin:center center}
+#gameFrame{position:absolute;left:50%;top:50%;width:720px;height:1280px;border:0;background:transparent;transform:translate(-50%,-50%) rotate(90deg);transform-origin:center center;box-shadow:none}
+#foregroundFog{pointer-events:none;z-index:4;background:linear-gradient(180deg,transparent 0%, transparent 78%, rgba(255,255,255,.06) 100%)}
+</style>
+</head>
+<body>
+<div id="scene">
+  <div class="layer sky">
+    <div class="cloud c1"></div><div class="cloud c2"></div><div class="cloud c3"></div><div class="cloud c4"></div>
+  </div>
+  <div class="layer mid">
+    <div class="zeppelin left"></div>
+    <div class="zeppelin right"></div>
+    <div class="hill back1"></div>
+    <div class="hill back2"></div>
+  </div>
+  <div class="layer ground">
+    <div class="hill front1"></div>
+    <div class="hill front2"></div>
+    <div class="path"></div>
+    <div class="grassPatch g1"></div><div class="grassPatch g2"></div><div class="grassPatch g3"></div><div class="grassPatch g4"></div>
+  </div>
+</div>
+<div id="viewport"><div id="stage"><iframe id="gameFrame" src="../ZeppelinerWithHighscore/index-22.html" title="Zeppeliner landscape scenic"></iframe></div></div>
+<div id="foregroundFog"></div>
+<script>
+(function(){
+  const stage=document.getElementById('stage');
+  function fit(){
+    const vw=window.innerWidth, vh=window.innerHeight;
+    const scale=Math.min(vw/1280,vh/720);
+    stage.style.setProperty('--scale', String(scale));
+  }
+  fit();
+  addEventListener('resize', fit, {passive:true});
+  addEventListener('orientationchange', ()=>setTimeout(fit,100), {passive:true});
+  if (screen.orientation && screen.orientation.lock) {
+    screen.orientation.lock('landscape').catch(()=>{});
+  }
+})();
+</script>
+</body>
+</html>
