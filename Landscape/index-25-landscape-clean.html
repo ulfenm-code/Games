@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="sv">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="screen-orientation" content="landscape">
+<title>Zeppeliner – Landscape Clean</title>
+<style>
+html,body{
+  margin:0;
+  width:100%;
+  height:100%;
+  overflow:hidden;
+  background:#61bdfa;
+  touch-action:none;
+}
+#viewport{
+  position:fixed;
+  inset:0;
+  overflow:hidden;
+}
+#stage{
+  position:absolute;
+  left:50%;
+  top:50%;
+  width:1280px;
+  height:720px;
+  transform:translate(-50%,-50%) scale(var(--scale,1));
+  transform-origin:center center;
+}
+#gameFrame{
+  position:absolute;
+  left:50%;
+  top:50%;
+  width:720px;
+  height:1280px;
+  border:0;
+  margin:0;
+  padding:0;
+  background:#61bdfa;
+  transform:translate(-50%,-50%) rotate(90deg);
+  transform-origin:center center;
+}
+</style>
+</head>
+<body>
+  <div id="viewport">
+    <div id="stage">
+      <iframe id="gameFrame" src="../ZeppelinerWithHighscore/index-22.html" title="Zeppeliner landscape"></iframe>
+    </div>
+  </div>
+<script>
+(function(){
+  const stage=document.getElementById('stage');
+  function fit(){
+    const vw=window.innerWidth;
+    const vh=window.innerHeight;
+    const scale=Math.min(vw/1280,vh/720);
+    stage.style.setProperty('--scale', String(scale));
+  }
+  fit();
+  addEventListener('resize', fit, {passive:true});
+  addEventListener('orientationchange', ()=>setTimeout(fit,100), {passive:true});
+  if (screen.orientation && screen.orientation.lock) {
+    screen.orientation.lock('landscape').catch(()=>{});
+  }
+})();
+</script>
+</body>
+</html>
