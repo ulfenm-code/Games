@@ -1,0 +1,137 @@
+name: Build Castle Duel v62 debug start
+
+on:
+  push:
+    paths:
+      - '.github/workflows/build_castle_v62_once.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  build-v62:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Build v62 from v61
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import json
+
+          src=Path('Castle/castle_index_61.html')
+          s=src.read_text(encoding='utf-8')
+
+          # Version-local references only.
+          s=s.replace('castle_manifest_61.webmanifest','castle_manifest_62.webmanifest')
+          s=s.replace('<title>Castle Duel v61</title>','<title>Castle Duel v62</title>')
+          s=s.replace('castle_bot_61.js','castle_bot_62.js')
+          s=s.replace('CastleBot61','CastleBot62')
+          s=s.replace('castle_index_61.html?match=','castle_index_62.html?match=')
+
+          # Normal release view: debug/status strip is hidden by default.
+          old="#net{position:fixed;left:10px;bottom:8px;z-index:8;background:#000a;color:#fff;font:700 12px system-ui;padding:5px 8px;border-radius:8px;pointer-events:none}"
+          new="#net{display:none;position:fixed;left:10px;bottom:8px;z-index:8;background:#000a;color:#fff;font:700 12px system-ui;padding:5px 8px;border-radius:8px;pointer-events:none}"
+          assert old in s
+          s=s.replace(old,new,1)
+
+          old="button{font:900 19px system-ui;padding:12px 25px;border:3px solid #5b3d13;border-radius:12px;background:#299a34;color:white;margin-top:16px}"
+          new=old+"\n.start-row{display:flex;gap:10px;align-items:stretch;justify-content:center;margin-top:16px}.start-row button{margin-top:0}.start-row button[type=submit]{flex:1}.debug-start{font:800 13px system-ui;padding:8px 12px;background:#6d5b49;max-width:180px}"
+          assert old in s
+          s=s.replace(old,new,1)
+
+          old='<div id="setup"><form class="card" id="form"><div><label>Player 1</label><input id="p1" maxlength="18" placeholder="Skriv namn..." required></div><button>STARTA SPEL</button><p id="iosTip" class="ios-tip" hidden>För helskärm på iPhone: Dela → Lägg till på hemskärmen → Öppna som webbapp.</p></form></div>'
+          new='<div id="setup"><form class="card" id="form"><div><label>Player 1</label><input id="p1" maxlength="18" placeholder="Skriv namn..." required></div><div class="start-row"><button type="submit">STARTA SPEL</button><button type="button" id="debugStart" class="debug-start">STARTA I DEBUG-LÄGE</button></div><p id="iosTip" class="ios-tip" hidden>För helskärm på iPhone: Dela → Lägg till på hemskärmen → Öppna som webbapp.</p></form></div>'
+          assert old in s
+          s=s.replace(old,new,1)
+
+          old='let pendingGameControllers=new Map();'
+          new='let pendingGameControllers=new Map();\nlet debugMode=false;'
+          assert old in s
+          s=s.replace(old,new,1)
+
+          old="const net=document.getElementById('net'); function netmsg(x){net.textContent='Castle-Duel: '+x}"
+          new="const net=document.getElementById('net'); function setDebugMode(on){debugMode=!!on;net.style.display=debugMode?'block':'none'} function netmsg(x){net.textContent='Castle-Duel: '+x}"
+          assert old in s
+          s=s.replace(old,new,1)
+
+          old="form.addEventListener('submit',async e=>{e.preventDefault();enterFullscreen();names=[(p1.value.trim()||'PLAYER 1').toUpperCase(),'PLAYER 2'];deviceRole=1;setup.style.display='none';try{netmsg('skapar match…');await createOnlineMatch();await waitForJoin()}catch(err){netmsg('offline-läge')}})"
+          new=r'''async function beginSetupGame(useDebug){
+  setDebugMode(!!useDebug);enterFullscreen();
+  const nameInput=document.getElementById('p1');
+  names=[((nameInput&&nameInput.value.trim())||'PLAYER 1').toUpperCase(),'PLAYER 2'];deviceRole=1;setup.style.display='none';
+  try{netmsg('skapar match…');await createOnlineMatch();await waitForJoin()}catch(err){netmsg('offline-läge')}
+}
+function openDebugStart(){
+  const f=document.getElementById('form');if(f&&!f.reportValidity())return;
+  showJoin('DEBUG-LÄGE','Ange lösenord för att starta spelet i debug-läge.','<input id="debugPassword" type="password" maxlength="12" autocomplete="off" placeholder="LÖSENORD"><br><button id="confirmDebug">STARTA DEBUG</button><button id="cancelDebug">AVBRYT</button>');
+  const inp=document.getElementById('debugPassword');if(inp)inp.focus();
+  document.getElementById('confirmDebug').onclick=()=>{
+    const pw=String(inp?inp.value:'').trim().toUpperCase();
+    if(pw!=='ABC'){jtxt.textContent='FEL LÖSENORD';if(inp){inp.value='';inp.focus()}return}
+    hideJoin();beginSetupGame(true);
+  };
+  document.getElementById('cancelDebug').onclick=hideJoin;
+}
+form.addEventListener('submit',e=>{e.preventDefault();beginSetupGame(false)});
+document.getElementById('debugStart').onclick=openDebugStart;'''
+          assert old in s
+          s=s.replace(old,new,1)
+
+          # v62 is complete and self-contained; no runtime reference to v61 files remains.
+          assert '<title>Castle Duel v62</title>' in s
+          assert 'castle_bot_62.js' in s
+          assert 'castle_manifest_62.webmanifest' in s
+          assert 'CastleBot62' in s
+          assert 'castle_index_61.html' not in s
+          assert 'castle_bot_61.js' not in s
+          assert 'castle_manifest_61.webmanifest' not in s
+          Path('Castle/castle_index_62.html').write_text(s,encoding='utf-8')
+
+          bot=Path('Castle/castle_bot_61.js').read_text(encoding='utf-8')
+          bot=bot.replace('Castle Duel v61','Castle Duel v62').replace('CastleBot61','CastleBot62')
+          Path('Castle/castle_bot_62.js').write_text(bot,encoding='utf-8')
+
+          manifest={
+            'name':'Castle Duel','short_name':'Castle Duel','id':'castle_index_62.html','start_url':'castle_index_62.html','scope':'./',
+            'display':'fullscreen','orientation':'landscape','background_color':'#0a0d12','theme_color':'#0a0d12','lang':'sv'
+          }
+          Path('Castle/castle_manifest_62.webmanifest').write_text(json.dumps(manifest,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
+          PY
+
+      - name: Verify v62
+        shell: bash
+        run: |
+          grep -q '<title>Castle Duel v62</title>' Castle/castle_index_62.html
+          grep -q 'castle_bot_62.js' Castle/castle_index_62.html
+          grep -q 'castle_manifest_62.webmanifest' Castle/castle_index_62.html
+          grep -q 'STARTA I DEBUG-LÄGE' Castle/castle_index_62.html
+          grep -q "pw!=='ABC'" Castle/castle_index_62.html
+          grep -q "net.style.display=debugMode?'block':'none'" Castle/castle_index_62.html
+          grep -q '#net{display:none;' Castle/castle_index_62.html
+          ! grep -q 'castle_index_61.html' Castle/castle_index_62.html
+          ! grep -q 'castle_bot_61.js' Castle/castle_index_62.html
+          ! grep -q 'castle_manifest_61.webmanifest' Castle/castle_index_62.html
+          node --check Castle/castle_bot_62.js
+          python3 - <<'PY'
+          from pathlib import Path
+          import re, subprocess
+          s=Path('Castle/castle_index_62.html').read_text(encoding='utf-8')
+          scripts=re.findall(r'<script(?:\s[^>]*)?>(.*?)</script>',s,re.S)
+          js='\n'.join(x for x in scripts if x.strip())
+          p=Path('/tmp/castle_v62_inline.js');p.write_text(js,encoding='utf-8')
+          subprocess.check_call(['node','--check',str(p)])
+          PY
+
+      - name: Commit v62 files
+        shell: bash
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add Castle/castle_index_62.html Castle/castle_bot_62.js Castle/castle_manifest_62.webmanifest
+          git commit -m 'Add Castle Duel v62 debug start mode'
+          git push
