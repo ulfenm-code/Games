@@ -1,0 +1,1013 @@
+<!doctype html><html lang="sv"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#0a0d12">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Castle Duel">
+<link rel="manifest" href="castle_manifest_60.webmanifest">
+<title>Castle Duel v60</title><style>
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#0a0d12;touch-action:none;font-family:system-ui}
+#wrap{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);transform-origin:center;aspect-ratio:16/9}
+.ios-tip{font-size:14px;line-height:1.4;margin:12px 0 0}
+.card{max-height:80dvh;overflow:auto}
+canvas{display:block;width:100%;height:100%;touch-action:none}
+#setup{position:fixed;inset:0;display:grid;place-items:center;background:#0008;z-index:4}
+#countdown{position:fixed;inset:0;display:none;place-items:center;background:#0009;z-index:5;color:white;text-align:center}
+#countdown .num{font:900 clamp(72px,18vw,180px) system-ui;line-height:.9;text-shadow:0 6px 15px #000}
+#countdown .txt{font:800 clamp(18px,4vw,34px) system-ui;margin-top:18px;text-shadow:0 3px 8px #000}
+.card{width:min(520px,84vw);background:#f0d6a4;border:5px solid #79501f;border-radius:18px;padding:18px 22px;text-align:center;color:#24170d}
+label{font-weight:900;display:block;margin-bottom:5px}input{text-transform:uppercase;box-sizing:border-box;width:100%;font-size:17px;padding:11px;border:2px solid #8b6a42;border-radius:9px}
+button{font:900 19px system-ui;padding:12px 25px;border:3px solid #5b3d13;border-radius:12px;background:#299a34;color:white;margin-top:16px}
+#net{position:fixed;left:10px;bottom:8px;z-index:8;background:#000a;color:#fff;font:700 12px system-ui;padding:5px 8px;border-radius:8px;pointer-events:none}
+#joinFlow{position:fixed;inset:0;z-index:20;display:none;align-items:center;justify-content:center;background:#000b}
+#joinCard{width:min(560px,88vw);background:#3b2418;color:white;border:4px solid #e6b94b;border-radius:22px;padding:24px;text-align:center;font:700 20px system-ui}
+#joinCard h2{margin:0 0 12px;font-size:30px}#joinCard button{font:800 20px system-ui;padding:12px 22px;margin:8px;border:0;border-radius:14px}
+#joinCard input{font:700 20px system-ui;padding:12px;width:min(300px,75%);margin:7px;border-radius:12px;border:2px solid #ddd;text-transform:uppercase}
+</style></head><body>
+<div id="joinFlow"><div id="joinCard"><h2 id="joinTitle">Online multiplayer</h2><div id="joinText"></div><div id="joinControls"></div></div></div>
+<div id="net">Castle-Duel: ansluter…</div><div id="wrap"><canvas id="c" width="1600" height="900"></canvas></div>
+<div id="setup"><form class="card" id="form"><div><label>Player 1</label><input id="p1" maxlength="18" placeholder="Skriv namn..." required></div><button>STARTA SPEL</button><p id="iosTip" class="ios-tip" hidden>För helskärm på iPhone: Dela → Lägg till på hemskärmen → Öppna som webbapp.</p></form></div>
+<div id="countdown"><div><div class="num" id="countNum">5</div><div class="txt">Vrid telefonen till liggande läge</div></div></div>
+<script src="castle_bot_60.js"></script>
+<script>
+const VW=1600,VH=900,bg=new Image();bg.src='castle_bg.jpg';
+const wrap=document.getElementById('wrap'),c=document.getElementById('c'),ctx=c.getContext('2d'),setup=document.getElementById('setup');
+const TURN_SECONDS=60;let last=performance.now(),drag=false,turn=0,started=false,paused=false,timeLeft=TURN_SECONDS,names=['Player 1','Player 2'];
+const SUPA_URL='https://bsegwnammbtfchkycmdc.supabase.co', SUPA_KEY='sb_publishable_RiZ_LruZihCpSiFWoZt6Mw_e-rOfYPX';
+let matchId=null,matchCode=null,serverTurnNo=1,deviceRole=1,gamePoll=null,lastSeenTurnNo=0,readyPoll=null,countdownStarted=false;
+let botMode=false,botLevel='medium',botThinkTimer=null,botAmmo={cannonball:3,bomb:1,rocket:2},botSearchStep=0,botTurnHandoff=false;
+// v57: public-information bot controller shared with the simulation harness.
+let botBrain=null,botBombTime=null;
+let roundEpoch=0,roundTimers=new Set(),roundIntervals=new Set(),pendingGameWrites=new Set();
+let turnDeadline=performance.now()+TURN_SECONDS*1000,turnChanging=false,shotResolving=false,botReadyAt=0;
+let aimWeapon=null,aimPointer=null,pickerPointer=null,landscapeActive=false,canvasRotated=false;
+let seenProjectiles=new Set(),seenBalloonEvents=new Set(),rematchPreparing=false,rematchRequested=false,rematchWaitingForGo=false,rematchOfferSeen=false,needsFreshMatch=false,newOpponentStarting=false;
+let pendingGameControllers=new Map();
+function sameRound(epoch){return epoch===roundEpoch}
+function roundTimeout(fn,ms=0){
+  const epoch=roundEpoch,id=setTimeout(()=>{roundTimers.delete(id);if(sameRound(epoch))Promise.resolve(fn()).catch(()=>{if(sameRound(epoch))netmsg('Försök igen — anslutningen svarade inte')})},ms);
+  roundTimers.add(id);return id;
+}
+function roundInterval(fn,ms){
+  const epoch=roundEpoch;let busy=false;
+  const id=setInterval(async()=>{if(busy||!sameRound(epoch))return;busy=true;try{await fn()}finally{busy=false}},ms);
+  roundIntervals.add(id);return id;
+}
+function resetRoundState(phase='menu'){
+  roundEpoch++;gameOverGeneration++;
+  for(const id of roundTimers)clearTimeout(id);
+  for(const id of roundIntervals)clearInterval(id);
+  roundTimers.clear();roundIntervals.clear();
+  gamePoll=joinPoll=readyPoll=battleReadyPoll=rematchPoll=botThinkTimer=highscoreTimer=null;
+  started=false;gamePhase=phase;paused=false;turn=0;serverTurnNo=1;lastSeenTurnNo=0;
+  timeLeft=TURN_SECONDS;turnDeadline=performance.now()+TURN_SECONDS*1000;turnChanging=false;shotResolving=false;
+  drag=pickerDrag=false;aimPointer=pickerPointer=aimWeapon=null;pickerMoved=false;pickerX=0;
+  countdownStarted=battleCountdownStarted=false;
+  gameOverWinner=0;gameOverHandled=highscoreVisible=highscoreResetPrompt=gameOverSoundPlayed=false;
+  document.getElementById('countdown').style.display='none';
+  document.getElementById('countdown').querySelector('.txt').textContent='Vrid telefonen till liggande läge';
+  placements=[];placementIndex=0;battlePlacements={1:[],2:[]};lastDestroyed.clear();
+  castleHP={1:3,2:3};castleBombs=[];castleSmoke={1:0,2:0};
+  balloons=[];balloonEpoch=0;balloonSpawnPlan={1:[],2:[]};destroyedBalloonIds.clear();castleAttackDone.clear();lastCastleEventKeys.clear();
+  seenProjectiles.clear();seenBalloonEvents.clear();lastBalloonEventKey=lastBombExplosionKey='';
+  rewardFly=explosion=impact=smoke=null;bombDetonating=arrowHitConsumed=false;
+  ammo={arrow:Infinity,cannonball:3,bomb:1,rocket:2};botAmmo={cannonball:3,bomb:1,rocket:2};
+  selectedWeapon=flyingWeapon='arrow';flyingShooter=1;botBrain=null;botBombTime=null;botTurnHandoff=false;botReadyAt=0;
+  rematchTransition=phase==='resetting';
+  gameRoundId=(crypto.randomUUID?crypto.randomUUID():Date.now()+'-'+Math.random().toString(36).slice(2));
+  resetShot();last=performance.now();
+}
+async function drainGameWrites(maxMs=1800){
+  const writes=[...pendingGameWrites];if(!writes.length)return;
+  let timer=null;
+  const timeout=new Promise(resolve=>{timer=setTimeout(()=>resolve('timeout'),maxMs)});
+  const result=await Promise.race([Promise.allSettled(writes).then(()=> 'done'),timeout]);
+  clearTimeout(timer);
+  if(result==='timeout'){
+    for(const work of writes){const controller=pendingGameControllers.get(work);if(controller)try{controller.abort()}catch(e){}}
+    await Promise.allSettled(writes);
+  }
+}
+function ownsCurrentTurn(){return deviceRole===turn+1||(botMode&&turn===1)}
+function resetTurnClock(){timeLeft=TURN_SECONDS;turnDeadline=performance.now()+TURN_SECONDS*1000;botReadyAt=0;shotResolving=false;turnChanging=false}
+function capturePointer(id){try{c.setPointerCapture(id)}catch(e){}}
+function cancelAim(e){
+  if(e&&e.pointerId!==aimPointer&&e.pointerId!==pickerPointer)return;
+  if(pickerDrag)snapPicker();
+  const wasDragging=drag;drag=pickerDrag=false;aimPointer=pickerPointer=aimWeapon=null;
+  if(wasDragging&&!q.fly)(gamePhase==='placement'?resetPlacementBall:resetShot)();
+}
+function resetBotBrain(){botBrain=CastleBot60.create(2,botLevel);botBombTime=null;botSearchStep=0}
+function botMarkSearchHit(){if(botBrain)botBrain.hit(q.x,q.y)}
+
+const net=document.getElementById('net'); function netmsg(x){net.textContent='Castle-Duel: '+x}
+async function rest(path,opts={}){
+  const timeoutMs=Number(opts.timeoutMs)||10000;
+  const {timeoutMs:_ignored,...fetchOpts}=opts;
+  const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),timeoutMs);
+  const work=(async()=>{
+    const h={apikey:SUPA_KEY,Authorization:'Bearer '+SUPA_KEY,'Content-Type':'application/json',Prefer:'return=representation',...(fetchOpts.headers||{})};
+    const r=await fetch(SUPA_URL+'/rest/v1/'+path,{...fetchOpts,headers:h,signal:controller.signal}),txt=await r.text();
+    if(!r.ok)throw new Error(txt||r.statusText);return txt?JSON.parse(txt):null;
+  })();
+  const tracked=fetchOpts.method&&fetchOpts.method!=='GET'&&/^(matches|shots|placements)(\?|$)/.test(path);
+  if(tracked){pendingGameWrites.add(work);pendingGameControllers.set(work,controller)}
+  try{return await work}
+  catch(e){if(e&&e.name==='AbortError')throw new Error('Nätverksanrop tog för lång tid');throw e}
+  finally{clearTimeout(timer);if(tracked){pendingGameWrites.delete(work);pendingGameControllers.delete(work)}}
+}
+function code4(){const chars='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';let x='';crypto.getRandomValues(new Uint32Array(4)).forEach(n=>x+=chars[n%chars.length]);return x}
+async function createOnlineMatch(){for(let tries=0;tries<8;tries++){const code=code4();try{const rows=await rest('matches',{method:'POST',body:JSON.stringify({code,status:'waiting',join_status:'waiting',player1_name:upperName(names[0],'PLAYER 1'),player2_name:null,current_player:1,turn_no:1})});matchId=rows[0].id;matchCode=code;netmsg('online • match '+code);return}catch(e){if(!String(e).includes('duplicate'))throw e}}throw new Error('Kunde inte skapa matchkod')}
+async function saveShot(player,vx,vy,weapon){if(!matchId)return;const power=Math.hypot(vx,vy),angle=Math.atan2(-vy,player===1?vx:-vx)*180/Math.PI;await rest('shots',{method:'POST',body:JSON.stringify({match_id:matchId,turn_no:serverTurnNo,player,vx,vy,power,angle,weapon})})}
+async function setServerTurn(p,n){if(!matchId)return;await rest('matches?id=eq.'+encodeURIComponent(matchId),{method:'PATCH',body:JSON.stringify({current_player:p,turn_no:n,updated_at:new Date().toISOString()})})}
+const A=[{x:190,y:615},{x:1410,y:615}],q={x:190,y:615,vx:0,vy:0,r:18,fly:false,shotTime:0};
+const weaponFiles={arrow:'Arrow.png',cannonball:'CanonBall.png',bomb:'Bomb.png',rocket:'Rocket.png'},weaponLabels={arrow:'PIL',cannonball:'KANONKULA',bomb:'BOMB',rocket:'RAKET'};
+const weaponImgs={};Object.entries(weaponFiles).forEach(([k,f])=>{let im=new Image();im.src=f;weaponImgs[k]=im});
+const balloonImgs={1:new Image(),2:new Image()};balloonImgs[1].src='BallonRed.png';balloonImgs[2].src='BallonBlue.png';
+// v45: local sound system. Nothing here is synchronized to Supabase; each phone controls its own sound.
+const soundFiles={arrow:'arrow.wav',cannonball:'cannon_fire_v3_heavy_rumble.wav',explosion:'explosion.wav',rocket:'rocket.wav',balloon:'balloon_pop_v2.wav'};
+const sounds={};Object.entries(soundFiles).forEach(([k,f])=>{const a=new Audio(f);a.preload='auto';sounds[k]=a});
+let soundOn=true;let gameOverSoundPlayed=false;
+function playSound(k,volume=1){if(!soundOn)return;const base=sounds[k];if(!base)return;try{const a=base.cloneNode();a.volume=Math.max(0,Math.min(1,volume));a.play().catch(()=>{})}catch(e){}}
+function playShotSound(k){if(k==='arrow')playSound('arrow',.72);else if(k==='cannonball')playSound('cannonball',.90);else if(k==='rocket')playSound('rocket',.78)}
+function soundButtonRect(){return{x:1142,y:785,w:70,h:70}}
+function toggleSound(){soundOn=!soundOn;if(soundOn)playSound('arrow',.18)}
+function drawSoundButton(){const r=soundButtonRect();ctx.save();ctx.shadowColor='rgba(0,0,0,.35)';ctx.shadowBlur=12;ctx.fillStyle='rgba(28,31,38,.78)';rr(r.x,r.y,r.w,r.h,18);ctx.fill();ctx.shadowBlur=0;ctx.strokeStyle='rgba(255,255,255,.78)';ctx.lineWidth=2;ctx.stroke();ctx.fillStyle='#fff';ctx.font='900 34px system-ui';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(soundOn?'🔊':'🔇',r.x+r.w/2,r.y+r.h/2+1);ctx.restore()}
+let ammo={arrow:Infinity,cannonball:3,bomb:1,rocket:2},selectedWeapon='arrow',flyingWeapon='arrow';
+let flyingShooter=1,lastBombExplosionKey='',arrowHitConsumed=false;
+const cfg={maxPull:165,power:6.8,g:1250,bounce:.5,ground:785};
+const weaponPower={arrow:7.5,cannonball:8.5,bomb:8.5,rocket:6.8};
+function shotPower(k){return weaponPower[k]||cfg.power}
+function maxShotSpeed(k){return cfg.maxPull*shotPower(k)}
+function clampShotSpeed(vx,vy,k){const m=Math.hypot(vx,vy),mx=maxShotSpeed(k);return m>mx&&m>0?{vx:vx*mx/m,vy:vy*mx/m}:{vx,vy}}
+const PHYS_STEP=1/120;let physAcc=0;
+const jf=document.getElementById('joinFlow'),jt=document.getElementById('joinTitle'),jtxt=document.getElementById('joinText'),jc=document.getElementById('joinControls');let joinPoll=null,pendingP2=null;
+function showJoin(title,text,html=''){jf.style.display='flex';jt.textContent=title;jtxt.textContent=text;jc.innerHTML=html}function hideJoin(){jf.style.display='none'}
+async function getMatch(){if(!matchId)return null;const a=await rest('matches?id=eq.'+encodeURIComponent(matchId)+'&select=*',{method:'GET'});return a&&a[0]}
+async function waitForJoin(){const epoch=roundEpoch;clearInterval(joinPoll);showJoin('Välj motståndare','Bjud in en spelare eller spela mot ChatGPT Bot.','<button id="smsInvite">Bjud in via SMS</button><button id="botInvite">Spela mot ChatGPT Bot</button>');document.getElementById('smsInvite').onclick=inviteSms;document.getElementById('botInvite').onclick=showBotLevels;joinPoll=roundInterval(async()=>{try{const m=await getMatch();if(!sameRound(epoch))return;if(m&&m.join_status==='requested'){clearInterval(joinPoll);pendingP2=(m.player2_name||'PLAYER 2').toUpperCase();showJoin(pendingP2+' vill spela!','Vill du släppa in spelaren?','<button id="acceptP2">Acceptera</button><button id="rejectP2">Neka</button>');document.getElementById('acceptP2').onclick=acceptJoin;document.getElementById('rejectP2').onclick=rejectJoin}}catch(e){netmsg('online • väntar på anslutning')}},800)}
+function showBotLevels(){clearInterval(joinPoll);showJoin('ChatGPT Bot','Välj svårighetsgrad. Boten ser inte dina dolda objekt.','<button id="botEasy">LÄTT</button><button id="botMedium">MEDEL</button><button id="botHard">SVÅR</button><br><button id="botBack">TILLBAKA</button>');document.getElementById('botEasy').onclick=()=>startBotMatch('easy');document.getElementById('botMedium').onclick=()=>startBotMatch('medium');document.getElementById('botHard').onclick=()=>startBotMatch('hard');document.getElementById('botBack').onclick=()=>needsFreshMatch?showOpponentMenu():waitForJoin()}
+async function startBotMatch(level){
+  if(newOpponentStarting)return;newOpponentStarting=true;enterFullscreen();
+  const localName=names[deviceRole-1],fresh=needsFreshMatch;
+  resetRoundState('waiting');const epoch=roundEpoch;
+  botMode=true;botLevel=level;names=[localName||'PLAYER 1','CHATGPT BOT'];deviceRole=1;
+  showJoin('Ansluter bot…','Förbereder en ny match.');
+  try{
+    if(fresh){await createOnlineMatch();if(!sameRound(epoch))return;}
+    await rest('matches?id=eq.'+encodeURIComponent(matchId),{method:'PATCH',body:JSON.stringify({player2_name:'ChatGPT Bot',join_status:'accepted',status:'playing',current_player:1,turn_no:1,accepted_at:null,player2_joined_at:null})});
+    if(!sameRound(epoch))return;needsFreshMatch=false;
+    startGameSync();showJoin('ChatGPT Bot • '+({easy:'Lätt',medium:'Medel',hard:'Svår'}[level]),'Boten är ansluten. Tryck STARTA SPEL.','<button id="startFullscreen">STARTA SPEL</button>');
+    document.getElementById('startFullscreen').onclick=()=>{
+      if(!sameRound(epoch)||countdownStarted)return;
+      const btn=document.getElementById('startFullscreen');btn.disabled=true;btn.textContent='STARTAR…';
+      enterFullscreen();hideJoin();countdownStarted=true;beginCountdown();
+      const now=new Date().toISOString();
+      rest('matches?id=eq.'+encodeURIComponent(matchId),{method:'PATCH',body:JSON.stringify({accepted_at:now,player2_joined_at:now,updated_at:now})}).catch(()=>{});
+    };
+  }catch(e){if(sameRound(epoch)){botMode=false;netmsg('Kunde inte ansluta boten. Försök igen.');showBotLevels()}}
+  finally{newOpponentStarting=false}
+}
+function inviteSms(){const inviteUrl='https://ulfenm-code.github.io/Games/Castle/castle_index_60.html?match='+encodeURIComponent(matchCode);const msg=(names[0]||'Player 1')+' vill spela Castle Duel med dig!\n\nTryck på länken för att gå med:\n\n'+inviteUrl;const isiOS=/iPad|iPhone|iPod/.test(navigator.userAgent);const sep=isiOS?'&':'?';window.location.href='sms:'+sep+'body='+encodeURIComponent(msg)}
+async function acceptJoin(){try{await rest('matches?id=eq.'+encodeURIComponent(matchId),{method:'PATCH',body:JSON.stringify({join_status:'accepted',status:'playing',accepted_at:null,player2_joined_at:null})});names[1]=(pendingP2||'PLAYER 2').toUpperCase();deviceRole=1;startGameSync();netmsg('online • match '+matchCode);showStartButton()}catch(e){netmsg('accept-fel')}}
+async function rejectJoin(){try{await rest('matches?id=eq.'+encodeURIComponent(matchId),{method:'PATCH',body:JSON.stringify({player2_name:null,join_status:'waiting',player2_joined_at:null})});pendingP2=null;waitForJoin()}catch(e){netmsg('neka-fel')}}
+async function enterFullscreen(){
+  landscapeActive=true;fit();
+  const root=document.documentElement,request=root.requestFullscreen||root.webkitRequestFullscreen;
+  try{
+    if(!document.fullscreenElement&&!document.webkitFullscreenElement&&request){
+      Promise.resolve(request.call(root,{navigationUI:'hide'})).then(lockLandscape).catch(()=>{});
+    }else lockLandscape();
+  }catch(e){}
+  roundTimeout(fit,150);
+}
+function lockLandscape(){try{if(screen.orientation&&screen.orientation.lock)Promise.resolve(screen.orientation.lock('landscape')).catch(()=>{})}catch(e){}fit()}
+function showStartButton(){showJoin('Båda spelarna är anslutna','Tryck STARTA SPEL. Spelet börjar när båda spelarna är klara.','<button id="startFullscreen">STARTA SPEL</button>');document.getElementById('startFullscreen').onclick=async()=>{const btn=document.getElementById('startFullscreen');btn.disabled=true;btn.textContent='VÄNTAR PÅ ANDRA SPELAREN…';enterFullscreen();await markReady()}}
+async function markReady(){const epoch=roundEpoch;try{const field=deviceRole===1?'accepted_at':'player2_joined_at',body={updated_at:new Date().toISOString()};body[field]=new Date().toISOString();await rest('matches?id=eq.'+encodeURIComponent(matchId),{method:'PATCH',body:JSON.stringify(body)});if(!sameRound(epoch))return;netmsg('online • match '+matchCode+' • redo');waitForBothReady()}catch(e){netmsg('kunde inte markera redo');const btn=document.getElementById('startFullscreen');if(btn){btn.disabled=false;btn.textContent='STARTA SPEL'}}}
+function waitForBothReady(){
+  clearInterval(readyPoll);const epoch=roundEpoch;let busy=false;
+  const check=async()=>{if(busy)return;busy=true;try{
+    const m=await getMatch();if(!sameRound(epoch))return;
+    if(m&&m.accepted_at&&m.player2_joined_at){clearInterval(readyPoll);if(!countdownStarted){countdownStarted=true;hideJoin();beginCountdown()}}
+  }catch(e){if(sameRound(epoch))netmsg('online • väntar på andra spelaren')}finally{busy=false}};
+  readyPoll=roundInterval(check,250);check();
+}
+function beginCountdown(){
+  const epoch=roundEpoch,cd=document.getElementById('countdown'),num=document.getElementById('countNum');
+  cd.style.display='grid';const t0=performance.now();
+  const tick=now=>{if(!sameRound(epoch))return;const remain=Math.max(0,5-Math.floor((now-t0)/1000));
+    if(remain>0){num.textContent=remain;requestAnimationFrame(tick)}
+    else{cd.style.display='none';started=true;turn=0;last=performance.now();startPlacement()}
+  };requestAnimationFrame(tick);
+}
+function fit(){
+  const v=window.visualViewport,w=v?v.width:innerWidth,h=v?v.height:innerHeight;
+  canvasRotated=landscapeActive&&h>w;
+  const scale=Math.min((canvasRotated?h:w)/VW,(canvasRotated?w:h)/VH);
+  wrap.style.width=VW*scale+'px';wrap.style.height=VH*scale+'px';
+  wrap.style.left=((v?v.offsetLeft:0)+w/2)+'px';wrap.style.top=((v?v.offsetTop:0)+h/2)+'px';
+  wrap.style.transform='translate(-50%,-50%)'+(canvasRotated?' rotate(90deg)':'');
+}
+function anchor(){return A[turn]}function resetShot(){let a=anchor();q.x=a.x;q.y=a.y;q.vx=q.vy=0;q.fly=false;q.shotTime=0;physAcc=0}
+function applyServerTurn(player,no){
+  const nt=Number(player)-1,nn=Number(no);
+  if((nt!==0&&nt!==1)||!Number.isInteger(nn)||nn<serverTurnNo)return;
+  const changed=nn!==serverTurnNo||nt!==turn;
+  serverTurnNo=nn;turn=nt;
+  if(turn===0)botTurnHandoff=false;
+  if(changed){
+    clearTimeout(botThinkTimer);botThinkTimer=null;resetTurnClock();paused=false;cancelAim();resetShot();
+    bombDetonating=false;arrowHitConsumed=false;
+  }
+  const waiting=botMode&&turn===1&&botReadyAt&&performance.now()>=botReadyAt;
+  if(!waiting)netmsg(deviceRole===turn+1?'STRIDSFAS • din tur • '+weaponLabels[selectedWeapon]:'STRIDSFAS • väntar på '+names[turn]);
+  if(botMode&&turn===1)scheduleBotTurn();
+}
+function afterShot(ms,no=serverTurnNo,shooter=flyingShooter){
+  return roundTimeout(()=>{if(serverTurnNo===no&&flyingShooter===shooter&&!q.fly)advanceAfterShot()},ms);
+}
+async function advanceAfterShot(){
+  if(deviceRole!==flyingShooter&&!(botMode&&flyingShooter===2))return;
+  await handoffTurn(flyingShooter===1?2:1);
+}
+async function advanceAfterTimeout(){
+  if(!ownsCurrentTurn())return;
+  await handoffTurn(turn===0?2:1);
+}
+async function handoffTurn(nextPlayer){
+  if(turnChanging||gamePhase!=='battle'||gameOverWinner||rematchTransition)return;
+  turnChanging=true;shotResolving=true;const epoch=roundEpoch,no=serverTurnNo;
+  cancelAim();resetShot();clearTimeout(botThinkTimer);botThinkTimer=null;
+  try{
+    await setServerTurn(nextPlayer,no+1);
+    if(sameRound(epoch)&&serverTurnNo===no)applyServerTurn(nextPlayer,no+1);
+  }catch(e){
+    if(!sameRound(epoch)||serverTurnNo!==no)return;turnChanging=false;
+    netmsg('Turbyte väntar på servern');roundTimeout(()=>handoffTurn(nextPlayer),800);
+  }
+}
+function startGameSync(){
+  clearInterval(gamePoll);const epoch=roundEpoch;
+  gamePoll=roundInterval(async()=>{
+    if(gamePhase!=='battle'||!matchId||!started||gameOverWinner||rematchTransition)return;
+    const valid=()=>sameRound(epoch)&&gamePhase==='battle'&&started&&!rematchTransition;
+    try{
+      await loadBattlePlacements();if(!valid()||gameOverWinner)return;
+      const m=await getMatch();if(!valid())return;
+      if(m){
+        if(m.player1_name)names[0]=String(m.player1_name).toUpperCase();
+        if(m.player2_name)names[1]=String(m.player2_name).toUpperCase();
+        const dbNo=Number(m.turn_no||1);
+        if(!q.fly||dbNo>serverTurnNo)applyServerTurn(m.current_player||1,dbNo);
+      }
+      const pollTurn=serverTurnNo;
+      const events=await rest('shots?match_id=eq.'+encodeURIComponent(matchId)+'&turn_no=gte.'+pollTurn+'&select=turn_no,player,vx,vy,power,angle,weapon&order=turn_no.asc',{method:'GET'});
+      if(!valid()||serverTurnNo!==pollTurn)return;
+      for(const sh of events||[]){
+        const shotNo=Number(sh.turn_no),shooter=Number(sh.player),weapon=String(sh.weapon||''),key=shotNo+':'+shooter;
+        if(!Number.isInteger(shotNo)||(shooter!==1&&shooter!==2))continue;
+        if(weapon.startsWith('balloon_hit_')){
+          const eventKey=key+':'+weapon;
+          if(!seenBalloonEvents.has(eventKey)){
+            seenBalloonEvents.add(eventKey);const parts=weapon.split('_');
+            if(shooter!==deviceRole&&!(botMode&&shooter===2)){
+              showBalloonHit(Number(parts[2]),parts[3],Number(sh.power),Number(sh.angle),parts[4]||'none',shooter,true);
+              if(shotNo===serverTurnNo){q.fly=false;physAcc=0;shotResolving=true}
+            }
+          }continue;
+        }
+        if(weapon==='bomb_exploded'){
+          if(shooter!==deviceRole&&!(botMode&&shooter===2)&&key!==lastBombExplosionKey&&shotNo===serverTurnNo){
+            lastBombExplosionKey=key;await showBombExplosion(Number(sh.vx),Number(sh.vy),shooter,false);if(!valid())return;
+          }continue;
+        }
+        // Auxiliary events never become projectiles and never consume a turn's shot.
+        if(!weaponKeys.includes(weapon)||seenProjectiles.has(key))continue;
+        if(shotNo<serverTurnNo)continue;
+        seenProjectiles.add(key);lastSeenTurnNo=Math.max(lastSeenTurnNo,shotNo);
+        if(shooter===deviceRole||(botMode&&shooter===2))continue;
+        const vx=Number(sh.vx),vy=Number(sh.vy);
+        if(!Number.isFinite(vx)||!Number.isFinite(vy))continue;
+        applyServerTurn(shooter,shotNo);resetShot();
+        flyingWeapon=weapon;flyingShooter=shooter;bombDetonating=arrowHitConsumed=false;shotResolving=false;
+        q.vx=vx;q.vy=vy;q.shotTime=0;physAcc=0;q.fly=true;playShotSound(weapon);
+        netmsg('STRIDSFAS • '+names[shooter-1]+' skjuter');
+      }
+      const attacks=await rest('shots?match_id=eq.'+encodeURIComponent(matchId)+'&weapon=like.castle_attack_%25&select=player,vx,vy,power,weapon',{method:'GET'});
+      if(!valid())return;
+      for(const ev of attacks||[]){
+        const key=String(ev.weapon);if(lastCastleEventKeys.has(key))continue;lastCastleEventKeys.add(key);
+        const parts=key.split('_'),owner=Number(parts[2]),target=Number(ev.power);
+        if((owner===1||owner===2)&&target===3-owner)launchCastleBomb(owner,parts[3],target,Number(ev.vx),Number(ev.vy)+BALLOON_H*.28);
+      }
+    }catch(e){if(valid())netmsg('online • synkroniserar')}
+  },250);
+}
+function pos(e){
+  const r=c.getBoundingClientRect();
+  return canvasRotated?{x:(e.clientY-r.top)*VW/r.height,y:VH-(e.clientX-r.left)*VH/r.width}
+    :{x:(e.clientX-r.left)*VW/r.width,y:(e.clientY-r.top)*VH/r.height};
+}
+function barRect(i){return i===0?{x:245,y:35,w:430,h:82}:{x:925,y:35,w:430,h:82}}function hit(r,p){return p.x>=r.x&&p.x<=r.x+r.w&&p.y>=r.y&&p.y<=r.y+r.h}
+
+async function savePlacements(){
+  if(!matchId||placements.length!==4)return;
+  const epoch=roundEpoch,id=matchId,player=deviceRole,rows=placements.map((o,i)=>({match_id:id,player,object_no:i,object_name:targetNames[i],x:o.x,y:o.y,destroyed:false}));
+  await rest('placements?match_id=eq.'+encodeURIComponent(id)+'&player=eq.'+player,{method:'DELETE'});
+  if(sameRound(epoch))await rest('placements',{method:'POST',body:JSON.stringify(rows)});
+}
+async function saveBotPlacements(){
+  if(!botMode||!matchId)return;const epoch=roundEpoch;
+  const objects=CastleBot60.placements(2,botLevel,targetImgs.map((_,i)=>placementSpriteSize(i)));
+  const rows=objects.map((o,i)=>({match_id:matchId,player:2,object_no:i,object_name:targetNames[i],x:o.x,y:o.y,destroyed:false}));
+  await rest('placements?match_id=eq.'+encodeURIComponent(matchId)+'&player=eq.2',{method:'DELETE'});
+  if(sameRound(epoch))await rest('placements',{method:'POST',body:JSON.stringify(rows)});
+}
+
+let battlePlacements={1:[],2:[]},lastDestroyed=new Set(),impact=null,explosion=null,bombDetonating=false;
+async function loadBattlePlacements(){
+  if(!matchId)return;const epoch=roundEpoch;
+  const rows=await rest('placements?match_id=eq.'+encodeURIComponent(matchId)+'&select=player,object_no,object_name,x,y,destroyed&order=player.asc,object_no.asc',{method:'GET'});
+  if(!sameRound(epoch))return;
+  let bp={1:[],2:[]};
+  (rows||[]).forEach(r=>{let p=Number(r.player);if(bp[p])bp[p].push({n:Number(r.object_no),name:r.object_name,x:Number(r.x),y:Number(r.y),destroyed:!!r.destroyed,b:0})});
+  // Detect newly destroyed own objects so the owner sees the hit effect at the correct position.
+  if(gamePhase==='battle'&&deviceRole){
+    for(const o of bp[deviceRole]){
+      const key=deviceRole+':'+o.n;
+      if(o.destroyed&&!lastDestroyed.has(key)){
+        impact={x:o.x,y:o.y,t:0,kind:'hit'};
+        lastDestroyed.add(key);
+      }
+    }
+  }
+  battlePlacements=bp;
+  if(gamePhase==='battle'&&!gameOverWinner){
+    for(const defender of [1,2]){
+      const objs=bp[defender]||[];
+      if(objs.length>=4&&objs.filter(o=>o.destroyed).length>=4){
+        gameOverWinner=defender===1?2:1;
+        paused=true;q.fly=false;drag=false;
+      }
+    }
+  }
+}
+function targetBox(o){
+  let im=targetImgs[o.n],w=150,h=150;
+  if(im&&im.complete&&im.naturalWidth&&im.naturalHeight){
+    let sc=Math.min(150/im.naturalWidth,150/im.naturalHeight);w=im.naturalWidth*sc;h=im.naturalHeight*sc;
+  }
+  return{x:o.x-w*.575,y:o.y-h*.575,w:w*1.15,h:h*1.15};
+}
+function projectileTargetHit(){
+  const opponent=flyingShooter===1?2:1;
+  for(const o of battlePlacements[opponent]||[]){
+    if(o.destroyed)continue;
+    const b=targetBox(o),r=q.r;
+    if(q.x+r>=b.x&&q.x-r<=b.x+b.w&&q.y+r>=b.y&&q.y-r<=b.y+b.h)return o;
+  }
+  return null;
+}
+function cannonballTargetHit(){return flyingWeapon==='cannonball'?projectileTargetHit():null}
+function bombSpriteRadius(){
+  const im=weaponImgs.bomb;
+  if(im&&im.complete&&im.naturalWidth&&im.naturalHeight){
+    const sc=Math.min(54/im.naturalWidth,54/im.naturalHeight);
+    return Math.max(im.naturalWidth*sc,im.naturalHeight*sc)/2;
+  }
+  return 27;
+}
+function bombBlastHits(x,y,r){
+  const opponent=flyingShooter===1?2:1,hits=[];
+  for(const o of battlePlacements[opponent]||[]){
+    if(o.destroyed)continue;
+    const b=targetBox(o),cx=Math.max(b.x,Math.min(x,b.x+b.w)),cy=Math.max(b.y,Math.min(y,b.y+b.h));
+    if(Math.hypot(x-cx,y-cy)<=r)hits.push(o);
+  }
+  return hits;
+}
+async function showBombExplosion(x,y,shooter,writeResult){
+  if(bombDetonating)return;const epoch=roundEpoch,no=serverTurnNo;
+  shotResolving=true;bombDetonating=true;flyingShooter=shooter;flyingWeapon='bomb';q.fly=false;physAcc=0;q.x=x;q.y=y;
+  const r=bombSpriteRadius()*3,hits=bombBlastHits(x,y,r);
+  if(botMode&&shooter===2&&botBrain)botBrain.observe(x,y,'bomb',true);
+  if(botMode&&shooter===2&&hits.length)botMarkSearchHit();
+  explosion={x,y,r,t:0};
+  playSound('explosion',.88);
+  if(writeResult){
+    try{await rest('shots?match_id=eq.'+encodeURIComponent(matchId)+'&turn_no=eq.'+serverTurnNo+'&player=eq.'+shooter+'&weapon=eq.bomb',{method:'PATCH',body:JSON.stringify({weapon:'bomb_exploded',vx:x,vy:y})})}catch(e){netmsg('bombsynk väntar på servern')}
+    if(!sameRound(epoch))return;
+    const opponent=shooter===1?2:1;
+    for(const o of hits){
+      o.destroyed=true;
+      try{await rest('placements?match_id=eq.'+encodeURIComponent(matchId)+'&player=eq.'+opponent+'&object_no=eq.'+o.n,{method:'PATCH',body:JSON.stringify({destroyed:true})})}
+      catch(e){if(sameRound(epoch))netmsg('TRÄFF • väntar på databassynk')}
+      if(!sameRound(epoch))return;
+    }
+    if(!sameRound(epoch))return;
+    const objs=battlePlacements[opponent]||[];
+    if(objs.length>=4&&objs.filter(v=>v.destroyed).length>=4){
+      gameOverWinner=shooter;paused=true;q.fly=false;drag=false;
+    }
+  }
+  roundTimeout(()=>{
+    if(hits.length)impact={x,y,t:0,kind:'hit'};
+    bombDetonating=false;
+    if(writeResult)afterShot(hits.length?420:80,no,shooter);
+  },620);
+}
+async function detonateBomb(){
+  if(!q.fly||flyingWeapon!=='bomb'||bombDetonating)return;
+  await showBombExplosion(q.x,q.y,flyingShooter,deviceRole===flyingShooter||(botMode&&flyingShooter===2));
+}
+async function destroyTarget(o,showImpact=true){
+  const epoch=roundEpoch,shooter=flyingShooter;const opponent=shooter===1?2:1;
+  if(botMode&&flyingShooter===2)botMarkSearchHit();
+  if(showImpact)impact={x:q.x,y:q.y,t:0,kind:'hit'};
+  if(deviceRole!==flyingShooter&&!(botMode&&flyingShooter===2))return;
+  o.destroyed=true;
+  try{
+    await rest('placements?match_id=eq.'+encodeURIComponent(matchId)+'&player=eq.'+opponent+'&object_no=eq.'+o.n,{method:'PATCH',body:JSON.stringify({destroyed:true})});
+    if(!sameRound(epoch))return;
+    const objs=battlePlacements[opponent]||[];
+    if(objs.length>=4&&objs.filter(v=>v.destroyed).length>=4){
+      gameOverWinner=shooter;paused=true;q.fly=false;drag=false;
+    }
+  }catch(e){netmsg('TRÄFF • väntar på databassynk')}
+}
+function finishCannonball(kind){
+  shotResolving=true;q.fly=false;physAcc=0;
+  if(kind==='hit')playSound('explosion',.62);
+  if(kind==='ground'){playSound('cannonball',.34);impact={x:q.x,y:PLACEMENT_GROUND_Y,t:0,kind:'ground'}};
+  if(deviceRole===flyingShooter||(botMode&&flyingShooter===2))afterShot(kind==='hit'?520:360);
+}
+
+/* FAS 1 */
+const targetFiles=['DragonTrans.png','WizardTrans.png','KnightTrans.png','TreasureTrans.png'],targetNames=['DRAKE','TROLLKARL','RIDDARE','SKATTKISTA'];
+const targetImgs=targetFiles.map(f=>{let im=new Image();im.src=f;return im});let gamePhase='waiting',placementIndex=0,placements=[],smoke=null;
+function placementAnchor(){return A[deviceRole-1]}
+function resetPlacementBall(){let a=placementAnchor();q.x=a.x;q.y=a.y;q.vx=q.vy=0;q.fly=false;q.shotTime=0;physAcc=0}
+const PLACEMENT_GROUND_Y=745;
+function placementSpriteSize(i=placementIndex){
+  let im=targetImgs[i],w=150,h=150;
+  if(im&&im.complete&&im.naturalWidth&&im.naturalHeight){
+    let sc=Math.min(150/im.naturalWidth,150/im.naturalHeight);
+    w=im.naturalWidth*sc;h=im.naturalHeight*sc;
+  }
+  return{w,h};
+}
+function placementFloorY(i=placementIndex){return PLACEMENT_GROUND_Y-placementSpriteSize(i).h/2}
+function clampPlacementPosition(x,y,i=placementIndex){
+  const sz=placementSpriteSize(i),halfW=sz.w/2,halfH=sz.h/2,mid=VW/2;
+  // Keep the complete rendered object inside its player's half and inside the canvas.
+  const minX=deviceRole===1?halfW:mid+halfW;
+  const maxX=deviceRole===1?mid-halfW:VW-halfW;
+  x=Math.max(minX,Math.min(maxX,x));
+  y=Math.max(halfH,Math.min(PLACEMENT_GROUND_Y-halfH,y));
+  return{x,y};
+}
+function startPlacement(){gamePhase='placement';started=true;paused=false;placementIndex=0;placements=[];drag=false;turnChanging=shotResolving=false;
+  gameOverWinner=0;gameOverHandled=false;highscoreVisible=false;gameOverSoundPlayed=false;
+  castleHP={1:3,2:3};castleBombs=[];castleSmoke={1:0,2:0};rewardFly=null;explosion=null;impact=null;
+  resetPlacementBall();rematchTransition=false;netmsg('FAS 1 • Placera '+targetNames[placementIndex])}
+let battleReadyPoll=null,battleCountdownStarted=false;
+async function placementCounts(){const rows=await rest('placements?match_id=eq.'+encodeURIComponent(matchId)+'&select=player,object_no',{method:'GET'});let sets={1:new Set(),2:new Set()};(rows||[]).forEach(r=>{let p=Number(r.player);if(sets[p])sets[p].add(Number(r.object_no))});return{p1:sets[1].size,p2:sets[2].size}}
+async function enterBattle(){
+  const epoch=roundEpoch;hideJoin();gamePhase='battleStarting';turn=0;serverTurnNo=1;
+  paused=false;cancelAim();ammo={arrow:Infinity,cannonball:3,bomb:1,rocket:2};botAmmo={cannonball:3,bomb:1,rocket:2};resetBotBrain();
+  selectedWeapon=flyingWeapon='cannonball';flyingShooter=1;pickerX=-PICKER_STEP;resetShot();
+  try{
+    await loadBattlePlacements();if(!sameRound(epoch))return;
+    if(deviceRole===1){
+      await rest('matches?id=eq.'+encodeURIComponent(matchId),{method:'PATCH',body:JSON.stringify({current_player:1,turn_no:1,accepted_at:new Date().toISOString(),player2_joined_at:new Date().toISOString()})});
+      if(!sameRound(epoch))return;
+    }
+    const m=await getMatch();if(!sameRound(epoch))return;
+    if(m){turn=Number(m.current_player||1)-1;serverTurnNo=Number(m.turn_no||1)}
+    gamePhase='battle';initBalloons();resetShot();resetTurnClock();last=performance.now();
+    netmsg(deviceRole===turn+1?'STRIDSFAS • din tur • '+weaponLabels[selectedWeapon]:'STRIDSFAS • väntar på '+names[turn]);
+    if(botMode&&turn===1)scheduleBotTurn();
+  }catch(e){
+    if(!sameRound(epoch))return;
+    showJoin('Striden väntar','Kunde inte ansluta. Försök igen.','<button id="retryBattle">FÖRSÖK IGEN</button>');
+    document.getElementById('retryBattle').onclick=enterBattle;
+  }
+}
+function beginBattleCountdown(){
+  if(battleCountdownStarted)return;battleCountdownStarted=true;clearInterval(battleReadyPoll);hideJoin();
+  const epoch=roundEpoch,cd=document.getElementById('countdown'),num=document.getElementById('countNum'),txt=cd.querySelector('.txt');
+  cd.style.display='grid';txt.textContent='Striden börjar';const t0=performance.now();
+  const tick=now=>{if(!sameRound(epoch))return;const remain=Math.max(0,3-Math.floor((now-t0)/1000));
+    if(remain>0){num.textContent=remain;requestAnimationFrame(tick)}
+    else{cd.style.display='none';txt.textContent='Vrid telefonen till liggande läge';enterBattle()}
+  };requestAnimationFrame(tick);
+}
+function waitForBothPlacements(){
+  clearInterval(battleReadyPoll);const epoch=roundEpoch;let busy=false;
+  const check=async()=>{
+    if(busy)return;busy=true;
+    try{
+      const count=await placementCounts();if(!sameRound(epoch)||battleCountdownStarted)return;
+      if(count.p1>=4&&count.p2>=4){beginBattleCountdown();return}
+      showJoin('Fas 1 klar','Väntar på att '+names[deviceRole===1?1:0]+' ska placera sina objekt…','');
+      netmsg('FAS 1 KLAR • väntar på andra spelaren');
+    }catch(e){if(sameRound(epoch))netmsg('FAS 1 KLAR • väntar på synkronisering')}
+    finally{busy=false}
+  };battleReadyPoll=roundInterval(check,400);check();
+}
+async function finishPlacement(){
+  const epoch=roundEpoch;q.fly=false;gamePhase='placementDone';netmsg('FAS 1 KLAR • sparar placeringar…');
+  try{
+    await savePlacements();if(!sameRound(epoch))return;
+    if(botMode)await saveBotPlacements();if(!sameRound(epoch))return;
+    netmsg('FAS 1 KLAR • placeringarna finns i databasen');waitForBothPlacements();
+  }catch(e){if(sameRound(epoch)){netmsg('FAS 1 KLAR • databasfel');showJoin('Kunde inte spara','Försök igen.','<button id="retryPlacement">FÖRSÖK IGEN</button>');document.getElementById('retryPlacement').onclick=finishPlacement}}
+}
+function lockPlacement(x=q.x,y=q.y){if(!q.fly||gamePhase!=='placement')return;const p=clampPlacementPosition(x,y,placementIndex);x=p.x;y=p.y;placements.push({x,y,n:placementIndex,b:performance.now()});smoke={x,y,t:0};playSound('explosion',.26);placementIndex++;drag=false;if(placementIndex>=4)finishPlacement();else{resetPlacementBall();netmsg('FAS 1 • Placera '+targetNames[placementIndex])}}
+
+const weaponKeys=['arrow','cannonball','bomb','rocket'];
+let pickerX=0,pickerDrag=false,pickerStartX=0,pickerStartOffset=0,pickerMoved=false;
+const PICKER_STEP=170,PICKER_CENTER=800;
+function weaponDockRect(){return{x:475,y:745,w:650,h:145}}
+function pickerIndex(){return Math.max(0,Math.min(weaponKeys.length-1,Math.round(-pickerX/PICKER_STEP)))}
+function snapPicker(){let i=pickerIndex();pickerX=-i*PICKER_STEP;selectedWeapon=weaponKeys[i]}
+function chooseNextWeapon(){let i=weaponKeys.findIndex(k=>ammo[k]>0);if(i<0)i=3;selectedWeapon=weaponKeys[i];pickerX=-i*PICKER_STEP}
+function drawWeaponDock(){if(gamePhase!=='battle')return;let d=weaponDockRect();ctx.save();ctx.shadowColor='rgba(0,0,0,.34)';ctx.shadowBlur=28;ctx.fillStyle='rgba(232,238,246,.62)';rr(d.x,d.y,d.w,d.h,38);ctx.fill();ctx.shadowBlur=0;ctx.strokeStyle='rgba(255,255,255,.72)';ctx.lineWidth=2;ctx.stroke();
+ctx.beginPath();ctx.rect(d.x+8,d.y+8,d.w-16,d.h-16);ctx.clip();
+weaponKeys.forEach((k,i)=>{let x=PICKER_CENTER+pickerX+i*PICKER_STEP,dist=Math.abs(x-PICKER_CENTER),focus=Math.max(0,1-dist/PICKER_STEP),scale=.72+.38*focus,disabled=k!=='arrow'&&ammo[k]<=0,im=weaponImgs[k];ctx.save();ctx.translate(x,d.y+62);ctx.scale(scale,scale);ctx.globalAlpha=disabled?.25:(.58+.42*focus);if(im&&im.complete&&im.naturalWidth){let mw=k==='arrow'?112:k==='rocket'?98:k==='bomb'?74:68,mh=62,sc=Math.min(mw/im.naturalWidth,mh/im.naturalHeight);ctx.drawImage(im,-im.naturalWidth*sc/2,-im.naturalHeight*sc/2,im.naturalWidth*sc,im.naturalHeight*sc)}ctx.globalAlpha=disabled?.35:(.7+.3*focus);ctx.fillStyle='#101217';ctx.font='800 14px system-ui';ctx.textAlign='center';ctx.fillText(weaponLabels[k],0,49);ctx.font='900 19px system-ui';if(k!=='arrow')ctx.fillText('×'+ammo[k],0,70);ctx.restore()});
+ctx.restore();
+ctx.save();let fw=142,fh=126,fx=PICKER_CENTER-fw/2,fy=d.y+9;ctx.shadowColor='rgba(74,144,255,.42)';ctx.shadowBlur=22;ctx.fillStyle='rgba(255,255,255,.10)';rr(fx,fy,fw,fh,30);ctx.fill();ctx.shadowBlur=0;ctx.strokeStyle='rgba(255,255,255,.92)';ctx.lineWidth=3;ctx.stroke();ctx.strokeStyle='rgba(85,151,255,.9)';ctx.lineWidth=2;rr(fx+4,fy+4,fw-8,fh-8,26);ctx.stroke();ctx.restore()}
+function drawProjectile(){let im=weaponImgs[flyingWeapon];if(!im||!im.complete||!im.naturalWidth){ctx.fillStyle='#222';ctx.beginPath();ctx.arc(q.x,q.y,q.r,0,Math.PI*2);ctx.fill();return}let maxW=flyingWeapon==='arrow'?92:flyingWeapon==='rocket'?84:flyingWeapon==='bomb'?54:48,maxH=flyingWeapon==='arrow'?34:flyingWeapon==='rocket'?48:flyingWeapon==='bomb'?54:48,sc=Math.min(maxW/im.naturalWidth,maxH/im.naturalHeight),w=im.naturalWidth*sc,h=im.naturalHeight*sc;ctx.save();ctx.translate(q.x,q.y);if(flyingWeapon==='arrow'||flyingWeapon==='rocket')ctx.rotate(Math.atan2(q.vy,q.vx));ctx.drawImage(im,-w/2,-h/2,w,h);ctx.restore()}
+function currentAim(){
+  const a=gamePhase==='placement'?placementAnchor():anchor(),weapon=gamePhase==='battle'?(aimWeapon||selectedWeapon):null;
+  const power=weapon?shotPower(weapon):cfg.power;
+  return {x:a.x,y:a.y,vx:(a.x-q.x)*power,vy:(a.y-q.y)*power,weapon,pull:Math.hypot(a.x-q.x,a.y-q.y)};
+}
+function aimTrajectory(aim=currentAim()){
+  const points=[],gravity=aim.weapon==='rocket'?0:cfg.g;
+  const floor=gamePhase==='placement'?placementFloorY():PLACEMENT_GROUND_Y;
+  for(let n=7;n<=203;n+=7){
+    const t=n*PHYS_STEP,x=aim.x+aim.vx*t,y=aim.y+aim.vy*t+.5*gravity*t*(t+PHYS_STEP);
+    if(x<0||x>VW||y>floor||(gamePhase==='placement'&&(deviceRole===1?x>=VW/2:x<=VW/2)))break;
+    points.push({x,y,n});
+  }return points;
+}
+c.addEventListener('pointerdown',e=>{
+  e.preventDefault();
+  if(highscoreVisible){const z=pos(e);if(hit(highscoreResetRect(),z))openHighscoreReset();else showOpponentMenu();return}
+  if(!started||rematchTransition)return;
+  const z=pos(e);
+  if(hit(soundButtonRect(),z)){toggleSound();return}
+  if(gameOverWinner){showHighscore();return}
+  if(paused||drag||pickerDrag)return;
+  if(gamePhase==='placement'){
+    if(q.fly){lockPlacement();return}
+    if(Math.hypot(z.x-q.x,z.y-q.y)<70){drag=true;aimPointer=e.pointerId;aimWeapon=null;capturePointer(e.pointerId)}
+    return;
+  }
+  if(gamePhase!=='battle'||turnChanging||shotResolving)return;
+  if(q.fly&&flyingWeapon==='bomb'&&deviceRole===flyingShooter){detonateBomb();return}
+  if(hit(weaponDockRect(),z)&&!q.fly){
+    pickerDrag=true;pickerPointer=e.pointerId;pickerMoved=false;pickerStartX=z.x;pickerStartOffset=pickerX;capturePointer(e.pointerId);return;
+  }
+  if(deviceRole!==turn+1||q.fly)return;
+  if(performance.now()>=turnDeadline){advanceAfterTimeout();return}
+  if(Math.hypot(z.x-q.x,z.y-q.y)<100){
+    snapPicker();aimWeapon=selectedWeapon;flyingWeapon=aimWeapon;aimPointer=e.pointerId;drag=true;
+    playSound('arrow',.16);capturePointer(e.pointerId);
+  }
+});
+c.addEventListener('pointermove',e=>{
+  if(pickerDrag&&e.pointerId===pickerPointer){
+    const z=pos(e),dx=z.x-pickerStartX;if(Math.abs(dx)>8)pickerMoved=true;
+    pickerX=Math.max(-(weaponKeys.length-1)*PICKER_STEP,Math.min(0,pickerStartOffset+dx));selectedWeapon=weaponKeys[pickerIndex()];return;
+  }
+  if(!drag||e.pointerId!==aimPointer||paused)return;
+  const z=pos(e),a=gamePhase==='placement'?placementAnchor():anchor();
+  let dx=z.x-a.x,dy=z.y-a.y,d=Math.hypot(dx,dy);
+  if(d>cfg.maxPull){dx*=cfg.maxPull/d;dy*=cfg.maxPull/d}
+  const side=gamePhase==='placement'?deviceRole-1:turn;
+  if(side===0&&dx>30)dx=30;if(side===1&&dx<-30)dx=-30;
+  q.x=a.x+dx;q.y=a.y+dy;
+});
+c.addEventListener('pointerup',e=>{
+  if(pickerDrag&&e.pointerId===pickerPointer){pickerDrag=false;pickerPointer=null;snapPicker();return}
+  if(!drag||e.pointerId!==aimPointer)return;
+  const shot=currentAim();drag=false;aimPointer=aimWeapon=null;
+  if(paused||gameOverWinner||turnChanging||shotResolving||shot.pull<8){(gamePhase==='placement'?resetPlacementBall:resetShot)();return}
+  if(gamePhase==='battle'){
+    if(deviceRole!==turn+1||performance.now()>=turnDeadline){resetShot();if(ownsCurrentTurn()&&performance.now()>=turnDeadline)advanceAfterTimeout();return}
+    if(shot.weapon!=='arrow'&&ammo[shot.weapon]<=0){resetShot();return}
+    flyingWeapon=shot.weapon;flyingShooter=deviceRole;arrowHitConsumed=bombDetonating=false;
+    if(shot.weapon!=='arrow')ammo[shot.weapon]--;
+    playShotSound(flyingWeapon);
+  }else if(gamePhase!=='placement')return;
+  Object.assign(q,{x:shot.x,y:shot.y,vx:shot.vx,vy:shot.vy,shotTime:0,fly:true});physAcc=0;
+  if(gamePhase==='battle'){
+    const epoch=roundEpoch;
+    saveShot(deviceRole,q.vx,q.vy,flyingWeapon).catch(()=>{if(sameRound(epoch))netmsg('skott lokalt; databasfel')});
+    if(shot.weapon!=='arrow'&&ammo[shot.weapon]<=0)chooseNextWeapon();
+  }
+});
+c.addEventListener('pointercancel',cancelAim);
+c.addEventListener('lostpointercapture',cancelAim);
+const BALLOON_TRAVEL_MS=120000,BALLOON_W=126,BALLOON_H=158,BALLOON_MIN_Y=180,BALLOON_MAX_Y=550;
+let balloonEpoch=0,balloons=[],balloonSpawnPlan={1:[],2:[]},rewardFly=null,lastBalloonEventKey='',destroyedBalloonIds=new Set();
+const CASTLE_X={1:190,2:1410},CASTLE_HIT_Y=690;
+let castleHP={1:3,2:3},castleBombs=[],castleSmoke={1:0,2:0},gameOverWinner=0;
+let castleAttackDone=new Set(),lastCastleEventKeys=new Set();
+let gameOverHandled=false,highscoreVisible=false,highscoreRows=[],highscoreTimer=null,rematchPoll=null;
+let gameRoundId=(crypto.randomUUID?crypto.randomUUID():Date.now()+'-'+Math.random().toString(36).slice(2)),gameOverGeneration=0;
+let rematchTransition=false;
+let highscoreResetPrompt=false;
+function highscoreResetRect(){return{x:620,y:735,w:360,h:72}}
+function openHighscoreReset(){
+  highscoreResetPrompt=true;
+  showJoin('RESET HIGHSCORE','Skriv lösenordet för att nollställa highscore.','<input id="resetPassword" type="password" maxlength="12" autocomplete="off" placeholder="LÖSENORD"><br><button id="confirmReset">RESET</button><button id="cancelReset">AVBRYT</button>');
+  const inp=document.getElementById('resetPassword');if(inp)inp.focus();
+  document.getElementById('confirmReset').onclick=confirmHighscoreReset;
+  document.getElementById('cancelReset').onclick=()=>{highscoreResetPrompt=false;hideJoin()};
+}
+async function confirmHighscoreReset(){
+  const inp=document.getElementById('resetPassword'),pw=String(inp?inp.value:'').trim().toUpperCase();
+  if(pw!=='ABC'){jtxt.textContent='FEL LÖSENORD';if(inp){inp.value='';inp.focus()}return}
+  try{
+    // v53: RLS tillåter UPDATE. Nollställ alla poäng; listan visar endast wins > 0.
+    await rest('highscores?wins=gt.0',{method:'PATCH',body:JSON.stringify({wins:0,updated_at:new Date().toISOString()})});
+    highscoreRows=[];highscoreResetPrompt=false;hideJoin();netmsg('highscore nollställd');
+  }catch(e){jtxt.textContent='KUNDE INTE NOLLSTÄLLA HIGHSCORE'}
+}
+function upperName(n,fallback='PLAYER'){return String(n||fallback).trim().toUpperCase()}
+async function recordWinnerOnce(){
+  if(rematchTransition||gameOverHandled||!gameOverWinner)return;
+  // v54: only Player 1/host is allowed to register an online win.
+  // This prevents the two phones from independently incrementing the same result.
+  if(!botMode&&matchId&&deviceRole!==1){gameOverHandled=true;return;}
+  const generation=gameOverGeneration,winner=upperName(names[gameOverWinner-1]);
+  gameOverHandled=true;
+  // v52: one immutable win-event per played round. If stale GAME OVER code fires again,
+  // the duplicate event_key is rejected and the highscore cannot be incremented twice.
+  const eventKey=String(matchId||matchCode||'LOCAL')+':'+gameRoundId;
+  let claimed=false;
+  try{
+    await rest('win_events',{method:'POST',body:JSON.stringify({event_key:eventKey,winner_name:winner})});
+    claimed=true;
+  }catch(e){
+    if(!String(e).toLowerCase().includes('duplicate')&&!String(e).includes('23505'))netmsg('vinstregistrering väntar');
+  }
+  if(claimed){
+    try{
+      const rows=await rest('highscores?name=eq.'+encodeURIComponent(winner)+'&select=name,wins',{method:'GET'});
+      if(rows&&rows.length)await rest('highscores?name=eq.'+encodeURIComponent(winner),{method:'PATCH',body:JSON.stringify({wins:Number(rows[0].wins||0)+1,updated_at:new Date().toISOString()})});
+      else await rest('highscores',{method:'POST',body:JSON.stringify({name:winner,wins:1})});
+    }catch(e){netmsg('highscore kunde inte uppdateras')}
+  }
+  if(generation!==gameOverGeneration)return;
+  clearTimeout(highscoreTimer);
+  highscoreTimer=roundTimeout(()=>{if(generation===gameOverGeneration&&gameOverWinner)showHighscore()},3000);
+}
+async function loadHighscore(){
+  try{const r=await rest('highscores?wins=gt.0&select=name,wins&order=wins.desc,name.asc&limit=3',{method:'GET'});highscoreRows=(r||[]).map(x=>({name:upperName(x.name),wins:Number(x.wins||0)}))}
+  catch(e){highscoreRows=[];netmsg('highscore kunde inte läsas')}
+}
+async function showHighscore(){
+  const epoch=roundEpoch,generation=gameOverGeneration;await loadHighscore();
+  if(sameRound(epoch)&&generation===gameOverGeneration&&gameOverWinner&&!rematchTransition)highscoreVisible=true;
+}
+function drawHighscore(){if(!highscoreVisible)return;ctx.save();ctx.fillStyle='rgba(0,0,0,.86)';ctx.fillRect(0,0,VW,VH);ctx.textAlign='center';ctx.fillStyle='#ffd75a';ctx.font='900 74px system-ui';ctx.fillText('HIGH SCORE',VW/2,185);ctx.font='900 42px system-ui';for(let i=0;i<3;i++){const r=highscoreRows[i],y=300+i*88;ctx.fillStyle=i===0?'#ffd75a':'#fff';ctx.fillText(r?((i+1)+'.  '+r.name+'  —  '+r.wins):((i+1)+'.  —'),VW/2,y)}
+ctx.fillStyle='#ddd';ctx.font='700 24px system-ui';ctx.fillText('TRYCK UTANFÖR KNAPPEN FÖR ATT FORTSÄTTA',VW/2,625);
+const b=highscoreResetRect();ctx.fillStyle='#9b2f2f';rr(b.x,b.y,b.w,b.h,18);ctx.fill();ctx.strokeStyle='#ffd6a0';ctx.lineWidth=3;ctx.stroke();ctx.fillStyle='#fff';ctx.font='900 27px system-ui';ctx.textBaseline='middle';ctx.fillText('RESET HIGHSCORE',VW/2,b.y+b.h/2);ctx.restore()}
+function showOpponentMenu(){
+  resetRoundState('menu');needsFreshMatch=true;rematchRequested=rematchWaitingForGo=rematchPreparing=rematchOfferSeen=false;
+  showJoin('VÄLJ MOTSTÅNDARE','Bjud in en spelare eller spela mot ChatGPT Bot.','<button id="smsInvite">Bjud in via SMS</button><button id="botInvite">Spela mot ChatGPT Bot</button><br><button id="rematchBtn">REMATCH</button>');
+  document.getElementById('smsInvite').onclick=startNewInvitation;
+  document.getElementById('botInvite').onclick=showBotLevels;
+  document.getElementById('rematchBtn').onclick=requestRematch;
+  if(!botMode)watchRematch();
+}
+async function startNewInvitation(){
+  if(newOpponentStarting)return;newOpponentStarting=true;enterFullscreen();
+  const localName=names[deviceRole-1];resetRoundState('waiting');botMode=false;deviceRole=1;names=[localName||'PLAYER 1','PLAYER 2'];
+  const epoch=roundEpoch;
+  try{await createOnlineMatch();if(!sameRound(epoch))return;needsFreshMatch=false;await waitForJoin();inviteSms()}
+  catch(e){if(sameRound(epoch)){netmsg('Kunde inte skapa match. Försök igen.');showOpponentMenu()}}
+  finally{newOpponentStarting=false}
+}
+function showRematchRecovery(message){
+  rematchPreparing=rematchTransition=rematchRequested=rematchWaitingForGo=false;
+  showJoin('REMATCH',message,'<button id="retryRematch">FÖRSÖK IGEN</button><button id="leaveRematch">TILL MENY</button>');
+  document.getElementById('retryRematch').onclick=()=>{rematchTransition=false;prepareRematch()};
+  document.getElementById('leaveRematch').onclick=showOpponentMenu;
+}
+async function prepareRematch(){
+  if(rematchPreparing)return;
+  rematchPreparing=true;
+  resetRoundState('resetting');rematchTransition=true;const epoch=roundEpoch;
+  showJoin('REMATCH','Förbereder nästa match…');
+  let done=false,watchdog=null;
+  const clearWatchdog=()=>{if(watchdog){clearTimeout(watchdog);roundTimers.delete(watchdog);watchdog=null}};
+  const recover=message=>{
+    if(done||!sameRound(epoch))return;done=true;clearWatchdog();clearInterval(rematchPoll);rematchPoll=null;
+    showRematchRecovery(message);
+  };
+  const finish=()=>{
+    if(done||!sameRound(epoch))return;done=true;clearWatchdog();clearInterval(rematchPoll);rematchPoll=null;
+    rematchPreparing=rematchRequested=rematchWaitingForGo=rematchOfferSeen=needsFreshMatch=false;
+    started=true;startPlacement();hideJoin();startGameSync();
+  };
+  watchdog=roundTimeout(()=>recover('Rematch tog för lång tid. Försök igen eller gå tillbaka till menyn.'),12000);
+  try{
+    if(botMode){
+      // Bot-rematch gets a completely fresh match row: no stale shot/placement can contaminate the new round.
+      await drainGameWrites(1600);if(!sameRound(epoch)||done)return;
+      const localName=names[0]||'PLAYER 1';matchId=null;matchCode=null;deviceRole=1;names=[localName,'CHATGPT BOT'];
+      await createOnlineMatch();if(!sameRound(epoch)||done)return;
+      await rest('matches?id=eq.'+encodeURIComponent(matchId),{method:'PATCH',timeoutMs:7000,body:JSON.stringify({player2_name:'ChatGPT Bot',join_status:'accepted',status:'playing',current_player:1,turn_no:1,accepted_at:null,player2_joined_at:null,updated_at:new Date().toISOString()})});
+      if(sameRound(epoch)&&!done)finish();return;
+    }
+    if(deviceRole===1){
+      // Human rematch: host alone clears old round data, preventing cross-device deletion races.
+      await drainGameWrites(1800);if(!sameRound(epoch)||done)return;
+      await rest('placements?match_id=eq.'+encodeURIComponent(matchId),{method:'DELETE',timeoutMs:7000});if(!sameRound(epoch)||done)return;
+      await rest('shots?match_id=eq.'+encodeURIComponent(matchId),{method:'DELETE',timeoutMs:7000});if(!sameRound(epoch)||done)return;
+      await rest('matches?id=eq.'+encodeURIComponent(matchId),{method:'PATCH',timeoutMs:7000,body:JSON.stringify({join_status:'accepted',current_player:1,turn_no:1,accepted_at:null,player2_joined_at:null,updated_at:new Date().toISOString()})});
+      if(sameRound(epoch)&&!done)finish();
+    }else{
+      const check=async()=>{try{
+        const m=await getMatch();if(!sameRound(epoch)||done)return;
+        if(freshRematchState(m))finish();
+        else if(m&&m.join_status==='rematch_go')netmsg('REMATCH • väntar på värden');
+      }catch(e){if(sameRound(epoch)&&!done)netmsg('REMATCH • väntar på värden')}};
+      rematchPoll=roundInterval(check,350);await check();
+    }
+  }catch(e){recover('Anslutningen avbröts under rematch. Försök igen.')}
+}
+function freshRematchState(m){return m&&m.join_status==='accepted'&&Number(m.current_player)===1&&Number(m.turn_no)===1&&!m.accepted_at&&!m.player2_joined_at}
+async function requestRematch(){
+  if(rematchTransition||rematchPreparing)return;
+  enterFullscreen();rematchTransition=true;rematchRequested=true;rematchOfferSeen=true;
+  gameOverGeneration++;clearTimeout(highscoreTimer);clearTimeout(botThinkTimer);botThinkTimer=null;
+  gameOverWinner=0;highscoreVisible=false;gameOverHandled=true;
+  if(botMode){await prepareRematch();return}
+  const epoch=roundEpoch,btn=document.getElementById('rematchBtn');
+  if(btn){btn.disabled=true;btn.textContent='VÄNTAR PÅ MOTSTÅNDAREN…'}
+  try{
+    await drainGameWrites(1800);if(!sameRound(epoch))return;
+    const first=await rest('matches?id=eq.'+encodeURIComponent(matchId)+'&join_status=eq.accepted',{method:'PATCH',timeoutMs:7000,body:JSON.stringify({join_status:'rematch_requested',updated_at:new Date().toISOString()})});
+    if(!sameRound(epoch))return;
+    if(first&&first.length){rematchWaitingForGo=true;watchRematch();return}
+    const m=await getMatch();if(!sameRound(epoch))return;
+    if(m&&m.join_status==='rematch_requested'){
+      await rest('matches?id=eq.'+encodeURIComponent(matchId)+'&join_status=eq.rematch_requested',{method:'PATCH',timeoutMs:7000,body:JSON.stringify({join_status:'rematch_go',updated_at:new Date().toISOString()})});
+      if(sameRound(epoch))await prepareRematch();
+    }else if(m&&(m.join_status==='rematch_go'||freshRematchState(m)))await prepareRematch();
+    else throw new Error('Rematch state changed');
+  }catch(e){
+    if(!sameRound(epoch))return;rematchTransition=false;rematchRequested=rematchWaitingForGo=false;
+    netmsg('Rematch kunde inte startas. Försök igen.');
+    const button=document.getElementById('rematchBtn');if(button){button.disabled=false;button.textContent='REMATCH'}
+  }
+}
+function watchRematch(){
+  clearInterval(rematchPoll);const epoch=roundEpoch;
+  rematchPoll=roundInterval(async()=>{
+    try{
+      const m=await getMatch();if(!sameRound(epoch)||!m)return;
+      if(m.join_status==='rematch_requested'){
+        rematchOfferSeen=true;
+        const btn=document.getElementById('rematchBtn');if(btn&&!btn.disabled)btn.textContent='ACCEPTERA REMATCH';
+      }
+      const participating=rematchRequested||rematchOfferSeen||rematchTransition||rematchPreparing;
+      if(participating&&(m.join_status==='rematch_go'||freshRematchState(m))){
+        clearInterval(rematchPoll);rematchPoll=null;await prepareRematch();
+      }
+    }catch(e){if(sameRound(epoch)&&rematchRequested)netmsg('REMATCH • försöker återansluta')}
+  },350);
+}
+function hashSeed(txt){let h=2166136261>>>0;for(const ch of String(txt||'CASTLE')){h^=ch.charCodeAt(0);h=Math.imul(h,16777619)}return h>>>0}
+function makeRng(seed){let a=seed>>>0;return()=>{a=(a+0x6D2B79F5)>>>0;let t=a;t=Math.imul(t^(t>>>15),t|1);t^=t+Math.imul(t^(t>>>7),t|61);return((t^(t>>>14))>>>0)/4294967296}}
+function buildBalloonPlan(owner){const rng=makeRng(hashSeed((matchCode||matchId||'CASTLE')+':BALLOON:'+owner));let t=2000+rng()*10000,out=[];for(let i=0;i<200;i++){out.push({id:owner+'-'+i,owner,start:t,y:BALLOON_MIN_Y+rng()*(BALLOON_MAX_Y-BALLOON_MIN_Y)});t+=(20000+rng()*40000)}return out}
+function initBalloons(){balloonEpoch=performance.now();balloons=[];destroyedBalloonIds.clear();balloonSpawnPlan={1:buildBalloonPlan(1),2:buildBalloonPlan(2)};rewardFly=null;lastBalloonEventKey='';
+castleHP={1:3,2:3};castleBombs=[];castleSmoke={1:0,2:0};gameOverWinner=0;gameOverHandled=false;highscoreVisible=false;gameOverSoundPlayed=false;castleAttackDone.clear();lastCastleEventKeys.clear()}
+function updateBalloons(){if(gamePhase!=='battle'||!balloonEpoch)return;const elapsed=performance.now()-balloonEpoch;for(const owner of [1,2])for(const spec of balloonSpawnPlan[owner]){if(spec.start>elapsed)break;if(!destroyedBalloonIds.has(spec.id)&&!balloons.some(b=>b.id===spec.id))balloons.push({...spec,alive:true})}balloons=balloons.filter(b=>b.alive&&elapsed-b.start<BALLOON_TRAVEL_MS+1500)}
+function balloonPos(b){const age=(performance.now()-balloonEpoch)-b.start,p=Math.max(0,Math.min(1,age/BALLOON_TRAVEL_MS));return b.owner===1?{x:-BALLOON_W/2+(VW+BALLOON_W)*p,y:b.y}:{x:VW+BALLOON_W/2-(VW+BALLOON_W)*p,y:b.y}}
+function arrowBalloonHit(){if(flyingWeapon!=='arrow'||arrowHitConsumed||!q.fly)return null;updateBalloons();for(const b of balloons){if(!b.alive)continue;const bp=balloonPos(b),hw=BALLOON_W*.38,hh=BALLOON_H*.43;if(q.x+q.r>=bp.x-hw&&q.x-q.r<=bp.x+hw&&q.y+q.r>=bp.y-hh&&q.y-q.r<=bp.y+hh)return{id:b.id,owner:b.owner,x:bp.x,y:bp.y}}return null}
+function randomReward(){let r=Math.random();return r<.55?'cannonball':r<.85?'bomb':'rocket'}
+function rewardDockTarget(k){let i=weaponKeys.indexOf(k);return{x:PICKER_CENTER+pickerX+i*PICKER_STEP,y:weaponDockRect().y+62}}
+function startRewardFly(k,x,y,awardTo){if(!k||k==='none')return;rewardFly={k,x,y,sx:x,sy:y,t:0,awardTo:awardTo||'none'}}
+function showBalloonHit(owner,id,x,y,reward,shooter,remote=false){playSound('balloon',.86);destroyedBalloonIds.add(id);const b=balloons.find(v=>v.id===id);if(b)b.alive=false;explosion={x,y,r:92,t:0};if(reward&&reward!=='none'){if(shooter===deviceRole){roundTimeout(()=>startRewardFly(reward,x,y,'human'),430)}else if(botMode&&shooter===2){roundTimeout(()=>{if(botAmmo[reward]!=null)botAmmo[reward]++},900)}}}
+async function hitBalloon(b){
+  const epoch=roundEpoch,no=serverTurnNo;
+  if(arrowHitConsumed||!q.fly)return;
+  const live=balloons.find(v=>v.id===b.id&&v.alive);if(!live)return;
+  // v52: consume the arrow synchronously on the first balloon contact.
+  shotResolving=true;arrowHitConsumed=true;q.fly=false;physAcc=0;
+  const shooter=flyingShooter,enemy=b.owner!==shooter,reward=enemy?randomReward():'none';
+  showBalloonHit(b.owner,b.id,b.x,b.y,reward,shooter,false);
+  if(deviceRole===shooter||(botMode&&shooter===2)){
+    try{await rest('shots?match_id=eq.'+encodeURIComponent(matchId)+'&turn_no=eq.'+serverTurnNo+'&player=eq.'+shooter+'&weapon=eq.arrow',{method:'PATCH',body:JSON.stringify({weapon:'balloon_hit_'+b.owner+'_'+b.id+'_'+reward,power:b.x,angle:b.y})})}catch(e){netmsg('ballongsynk väntar på servern')}
+    if(sameRound(epoch))afterShot(950,no,shooter);
+  }
+}
+
+function castleAttackKey(b){return 'castle_attack_'+b.owner+'_'+b.id}
+async function sendCastleAttack(b,target){
+  if(!matchId)return;
+  const key=castleAttackKey(b);
+  try{await rest('shots',{method:'POST',body:JSON.stringify({match_id:matchId,turn_no:serverTurnNo,player:b.owner,vx:CASTLE_X[target],vy:b.y,power:target,angle:0,weapon:key})})}catch(e){netmsg('borgattack synkroniseras')}
+}
+function launchCastleBomb(owner,id,target,x,y){
+  const k=owner+':'+id;
+  if(castleAttackDone.has(k)||gameOverWinner)return;
+  castleAttackDone.add(k);
+  playSound('rocket',.24);
+  castleBombs.push({owner,id,target,x,y,vy:0,done:false});
+}
+function checkBalloonCastleAttacks(){
+  if(gamePhase!=='battle'||gameOverWinner)return;
+  updateBalloons();
+  for(const b of balloons){
+    if(!b.alive)continue;
+    const target=b.owner===1?2:1,p=balloonPos(b),k=b.owner+':'+b.id;
+    if(castleAttackDone.has(k))continue;
+    const crossed=b.owner===1?p.x>=CASTLE_X[target]:p.x<=CASTLE_X[target];
+    if(crossed){
+      launchCastleBomb(b.owner,b.id,target,CASTLE_X[target],p.y+BALLOON_H*.28);
+      if(deviceRole===b.owner)sendCastleAttack(b,target);
+    }
+  }
+}
+function applyCastleDamage(target){
+  if(gameOverWinner)return;
+  castleHP[target]=Math.max(0,castleHP[target]-1);
+  castleSmoke[target]=Math.min(3,castleSmoke[target]+1);
+  explosion={x:CASTLE_X[target],y:CASTLE_HIT_Y,r:115+castleSmoke[target]*18,t:0};
+  playSound('explosion',.92);
+  impact={x:CASTLE_X[target],y:CASTLE_HIT_Y,t:0,kind:'hit'};
+  if(castleHP[target]<=0){
+    gameOverWinner=target===1?2:1;
+    paused=true;q.fly=false;drag=false;
+  }
+}
+function updateCastleBombs(dt){
+  checkBalloonCastleAttacks();
+  for(const b of castleBombs){
+    if(b.done)continue;
+    b.vy+=720*dt;b.y+=b.vy*dt;
+    if(b.y>=CASTLE_HIT_Y){b.y=CASTLE_HIT_Y;b.done=true;applyCastleDamage(b.target)}
+  }
+  castleBombs=castleBombs.filter(b=>!b.done);
+}
+function drawCastleBombs(){
+  const im=weaponImgs.bomb;
+  for(const b of castleBombs){
+    if(im&&im.complete&&im.naturalWidth){let sc=Math.min(48/im.naturalWidth,48/im.naturalHeight);ctx.drawImage(im,b.x-im.naturalWidth*sc/2,b.y-im.naturalHeight*sc/2,im.naturalWidth*sc,im.naturalHeight*sc)}
+  }
+}
+function drawCastleDamage(){
+  for(const p of [1,2]){
+    // Damage bar directly below each castle, in the brown soil below the grass edge.
+    const x=CASTLE_X[p]-92,y=790,w=184,h=28;
+    ctx.save();
+    ctx.fillStyle='rgba(20,15,12,.88)';rr(x-7,y-7,w+14,h+14,12);ctx.fill();
+    for(let i=0;i<3;i++){
+      ctx.fillStyle=i<castleHP[p]?(p===1?'#e84646':'#35a8ef'):'#2b2421';
+      rr(x+i*(w/3)+3,y+3,w/3-6,h-6,6);ctx.fill()
+    }
+    ctx.strokeStyle='#f3d39a';ctx.lineWidth=3;rr(x,y,w,h,8);ctx.stroke();
+    ctx.fillStyle='#fff';ctx.font='900 18px system-ui';ctx.textAlign='center';
+    ctx.fillText(castleHP[p]+'/3',CASTLE_X[p],y+22);
+    ctx.restore();
+  }
+}
+function drawCastleSmoke(){
+  const now=performance.now()/1000;
+  for(const p of [1,2]){
+    const level=castleSmoke[p];if(!level)continue;
+    ctx.save();
+    for(let i=0;i<level*4;i++){
+      const phase=(now*.22+i*.19)%1,rad=14+phase*24+level*2;
+      ctx.globalAlpha=(1-phase)*(.28+.09*level);
+      ctx.fillStyle='#4c4a48';
+      ctx.beginPath();ctx.arc(CASTLE_X[p]+Math.sin(i*2.1+now)*22,665-phase*(80+level*18),rad,0,Math.PI*2);ctx.fill();
+    }
+    ctx.restore();
+  }
+}
+function drawGameOver(){
+  if(rematchTransition||!gameOverWinner)return;
+  recordWinnerOnce();
+  if(!gameOverSoundPlayed){gameOverSoundPlayed=true;playSound('explosion',1)}
+  ctx.save();ctx.fillStyle='rgba(0,0,0,.66)';ctx.fillRect(0,0,VW,VH);
+  ctx.textAlign='center';ctx.fillStyle='#ffd75a';ctx.font='900 82px system-ui';ctx.fillText('GAME OVER',VW/2,360);
+  ctx.fillStyle='#fff';ctx.font='900 42px system-ui';ctx.fillText(names[gameOverWinner-1]+' VINNER!',VW/2,430);ctx.restore();
+}
+
+function drawBalloons(){if(gamePhase!=='battle')return;updateBalloons();for(const b of balloons){if(!b.alive)continue;const p=balloonPos(b);if(p.x<-BALLOON_W||p.x>VW+BALLOON_W)continue;const im=balloonImgs[b.owner];if(im.complete&&im.naturalWidth)ctx.drawImage(im,p.x-BALLOON_W/2,p.y-BALLOON_H/2,BALLOON_W,BALLOON_H)}}
+function drawRewardFly(){if(!rewardFly)return;rewardFly.t=Math.min(1,rewardFly.t+.035);const u=1-Math.pow(1-rewardFly.t,2),dst=rewardDockTarget(rewardFly.k);rewardFly.x=rewardFly.sx+(dst.x-rewardFly.sx)*u;rewardFly.y=rewardFly.sy+(dst.y-rewardFly.sy)*u;const im=weaponImgs[rewardFly.k];if(im&&im.complete&&im.naturalWidth){let sc=Math.min(62/im.naturalWidth,48/im.naturalHeight);ctx.save();ctx.shadowColor='#fff';ctx.shadowBlur=12;ctx.drawImage(im,rewardFly.x-im.naturalWidth*sc/2,rewardFly.y-im.naturalHeight*sc/2,im.naturalWidth*sc,im.naturalHeight*sc);ctx.restore()}if(rewardFly.t>=1){playSound('arrow',.22);if(rewardFly.awardTo==='human')ammo[rewardFly.k]++;else if(rewardFly.awardTo==='bot'&&botAmmo[rewardFly.k]!=null)botAmmo[rewardFly.k]++;rewardFly=null}}
+function finishSimpleProjectile(kind){
+  shotResolving=true;q.fly=false;physAcc=0;
+  if(kind==='hit'&&flyingWeapon==='rocket')playSound('explosion',.70);
+  if(kind==='ground'){if(flyingWeapon==='rocket')playSound('explosion',.56);else playSound('cannonball',.28);impact={x:q.x,y:PLACEMENT_GROUND_Y,t:0,kind:'ground'}};
+  if(deviceRole===flyingShooter||(botMode&&flyingShooter===2))afterShot(kind==='hit'?520:kind==='ground'?360:80);
+}
+function stepBattle(){
+  q.shotTime+=PHYS_STEP;
+  const ox=q.x,oy=q.y;
+  if(flyingWeapon!=='rocket')q.vy+=cfg.g*PHYS_STEP;
+  q.x+=q.vx*PHYS_STEP;q.y+=q.vy*PHYS_STEP;
+  if(botMode&&flyingShooter===2&&botBrain){
+    botBrain.observe(q.x,q.y,flyingWeapon);
+    if(flyingWeapon==='bomb'&&botBombTime!==null&&q.shotTime+1e-9>=botBombTime){detonateBomb();return false}
+  }
+
+  if(flyingWeapon==='cannonball'){
+    const o=projectileTargetHit();
+    if(o){destroyTarget(o);finishCannonball('hit');return false}
+    if(oy<PLACEMENT_GROUND_Y&&q.y>=PLACEMENT_GROUND_Y){const t=(PLACEMENT_GROUND_Y-oy)/(q.y-oy||1);q.x=ox+(q.x-ox)*t;q.y=PLACEMENT_GROUND_Y;finishCannonball('ground');return false}
+    if(q.x<-60||q.x>VW+60||q.y>VH+60||q.shotTime>7){finishCannonball('ground');return false}
+    return true
+  }
+  if(flyingWeapon==='arrow'){
+    const bh=arrowBalloonHit();
+    if(bh){hitBalloon(bh);return false}
+    if(oy<PLACEMENT_GROUND_Y&&q.y>=PLACEMENT_GROUND_Y){const t=(PLACEMENT_GROUND_Y-oy)/(q.y-oy||1);q.x=ox+(q.x-ox)*t;q.y=PLACEMENT_GROUND_Y;finishSimpleProjectile('none');return false}
+    if(q.x<-60||q.x>VW+60||q.y>VH+60||q.shotTime>7){finishSimpleProjectile('none');return false}
+    return true
+  }
+  if(flyingWeapon==='bomb'){
+    const o=projectileTargetHit();
+    if(o){detonateBomb();return false}
+    if(oy<PLACEMENT_GROUND_Y&&q.y>=PLACEMENT_GROUND_Y){const t=(PLACEMENT_GROUND_Y-oy)/(q.y-oy||1);q.x=ox+(q.x-ox)*t;q.y=PLACEMENT_GROUND_Y;finishSimpleProjectile('ground');return false}
+    if(q.x<-60||q.x>VW+60||q.y>VH+60||q.shotTime>7){finishSimpleProjectile('ground');return false}
+    return true
+  }
+  if(flyingWeapon==='rocket'){
+    const o=projectileTargetHit();
+    if(o){destroyTarget(o);finishSimpleProjectile('hit');return false}
+    if(oy<PLACEMENT_GROUND_Y&&q.y>=PLACEMENT_GROUND_Y){const t=(PLACEMENT_GROUND_Y-oy)/(q.y-oy||1);q.x=ox+(q.x-ox)*t;q.y=PLACEMENT_GROUND_Y;finishSimpleProjectile('ground');return false}
+    if(q.x<-100||q.x>VW+100||q.y<-100||q.y>VH+100||q.shotTime>12){finishSimpleProjectile('none');return false}
+    return true
+  }
+  return true
+}
+
+function botObservation(){
+  updateBalloons();
+  return{ammo:{...botAmmo},ownHP:castleHP[2],enemyHP:castleHP[1],timeLeft:Math.max(0,(turnDeadline-performance.now())/1000),turnElapsed:TURN_SECONDS-Math.max(0,(turnDeadline-performance.now())/1000),
+    balloons:balloons.filter(b=>b.alive).map(b=>({id:b.id,owner:b.owner,...balloonPos(b),attacked:castleAttackDone.has(b.owner+':'+b.id)})),
+    castleBombs:castleBombs.filter(b=>!b.done).map(b=>({target:b.target,y:b.y,vy:b.vy}))};
+}
+function scheduleBotTurn(){
+  if(!botMode||gamePhase!=='battle'||turn!==1||q.fly||gameOverWinner||paused||botThinkTimer||botTurnHandoff||turnChanging||shotResolving)return;
+  if(!botBrain)resetBotBrain();
+  if(!botReadyAt)botReadyAt=performance.now()+botBrain.delay()*1000;
+  const react=Math.max(0,botReadyAt-performance.now());
+  if(react>0){
+    netmsg('STRIDSFAS • ChatGPT Bot tänker…');
+    botThinkTimer=roundTimeout(()=>{botThinkTimer=null;scheduleBotTurn()},react);return;
+  }
+  const decision=botBrain.waitDecision(botObservation());
+  if(decision.seconds>0){
+    netmsg('STRIDSFAS • ChatGPT Bot väntar på ballongattack…');
+    botThinkTimer=roundTimeout(()=>{botThinkTimer=null;scheduleBotTurn()},Math.min(.5,decision.seconds)*1000);
+  }else botShoot();
+}
+async function botPassTurn(){botTurnHandoff=true;await handoffTurn(1)}
+async function botShoot(){
+  if(!botMode||gamePhase!=='battle'||turn!==1||q.fly||gameOverWinner||paused||botTurnHandoff||turnChanging||shotResolving)return;
+  const epoch=roundEpoch,no=serverTurnNo;
+  botTurnHandoff=true;
+  const action=botBrain.next(botObservation());
+  if(action.pass){botTurnHandoff=false;await botPassTurn();return}
+  const weapon=action.weapon;
+  if(weapon!=='arrow')botAmmo[weapon]--;
+  flyingWeapon=weapon;flyingShooter=2;bombDetonating=false;botBombTime=action.detonateAt??null;
+  q.x=A[1].x;q.y=A[1].y;q.vx=action.vx;q.vy=action.vy;q.shotTime=0;physAcc=0;arrowHitConsumed=false;q.fly=true;
+  playShotSound(weapon);
+  try{await saveShot(2,q.vx,q.vy,weapon)}catch(e){}
+  if(sameRound(epoch)&&serverTurnNo===no)netmsg('STRIDSFAS • ChatGPT Bot skjuter • '+weaponLabels[weapon]);
+}
+
+function update(dt){if(!started)return;if(gamePhase==='placement'){if(q.fly){physAcc+=dt;let n=0;while(q.fly&&physAcc>=PHYS_STEP&&n<12){physAcc-=PHYS_STEP;q.vy+=cfg.g*PHYS_STEP;let ox=q.x,oy=q.y;q.x+=q.vx*PHYS_STEP;q.y+=q.vy*PHYS_STEP;n++;let floorY=placementFloorY();if(oy<floorY&&q.y>=floorY){let t=(floorY-oy)/(q.y-oy||1),cx=ox+(q.x-ox)*t;q.x=cx;q.y=floorY;lockPlacement(cx,floorY);break}let crossed=deviceRole===1?(ox<VW/2&&q.x>=VW/2):(ox>VW/2&&q.x<=VW/2);if(crossed){let t=(VW/2-ox)/(q.x-ox||1),cy=oy+(q.y-oy)*t;q.x=VW/2;q.y=Math.min(cy,floorY);lockPlacement(VW/2,q.y);break}if(q.x<-50||q.x>VW+50||q.y>VH+100){resetPlacementBall();break}}}return}if(gamePhase!=='battle')return;updateCastleBombs(dt);if(paused||gameOverWinner)return;if(!q.fly&&!shotResolving&&!turnChanging){timeLeft=Math.max(0,(turnDeadline-performance.now())/1000);if(timeLeft<=0&&ownsCurrentTurn())advanceAfterTimeout()}else{physAcc+=dt;let n=0;while(q.fly&&physAcc>=PHYS_STEP&&n<12){physAcc-=PHYS_STEP;if(!stepBattle())break;n++}}}
+function rr(x,y,w,h,r){ctx.beginPath();ctx.roundRect(x,y,Math.max(0,w),h,r)}
+function drawBar(i){let r=barRect(i),active=i===turn;ctx.fillStyle='rgba(83,49,20,.94)';rr(r.x,r.y,r.w,r.h,16);ctx.fill();ctx.strokeStyle=active?'#ffd44c':'#a9783c';ctx.lineWidth=active?5:3;ctx.stroke();ctx.fillStyle='#fff';ctx.font='900 25px system-ui';ctx.textAlign='left';ctx.fillText(names[i],r.x+18,r.y+31);let bx=r.x+18,by=r.y+48,bw=r.w-100,bh=18;ctx.fillStyle='#171717';rr(bx,by,bw,bh,9);ctx.fill();let f=i===turn?Math.max(0,timeLeft/TURN_SECONDS):1;ctx.fillStyle=i===0?'#e83b3b':'#2ca4ef';rr(bx,by,bw*f,bh,9);ctx.fill();ctx.textAlign='right';ctx.fillStyle='#fff';ctx.font='900 23px system-ui';ctx.fillText(i===turn?Math.ceil(timeLeft)+'s':TURN_SECONDS+'s',r.x+r.w-18,r.y+65);}
+function trajectory(){
+  if(!drag)return;ctx.fillStyle='#fff';
+  for(const p of aimTrajectory()){ctx.beginPath();ctx.arc(p.x,p.y,3,0,Math.PI*2);ctx.fill()}
+}
+function drawSlingshotActive(){if(!drag||gamePhase!=='battle')return;ctx.save();const pulse=.5+.5*Math.sin(performance.now()/95);ctx.strokeStyle='rgba(255,220,70,'+(.72+.22*pulse)+')';ctx.lineWidth=5;ctx.shadowColor='rgba(255,210,45,.95)';ctx.shadowBlur=18+8*pulse;ctx.beginPath();ctx.arc(q.x,q.y,42+4*pulse,0,Math.PI*2);ctx.stroke();ctx.restore()}
+function drawMagicBall(){let g=ctx.createRadialGradient(q.x-8,q.y-9,2,q.x,q.y,25);g.addColorStop(0,'#fff');g.addColorStop(.25,'#dffaff');g.addColorStop(.65,'#39aaff');g.addColorStop(1,'#173da8');ctx.fillStyle=g;ctx.beginPath();ctx.arc(q.x,q.y,25,0,Math.PI*2);ctx.fill()}
+function drawSmoke(){if(!smoke)return;smoke.t+=.035;let al=1-smoke.t,r=35+smoke.t*100;ctx.save();ctx.globalAlpha=Math.max(0,al);ctx.fillStyle='#fff';for(let k=0;k<7;k++){let an=k*6.28/7;ctx.beginPath();ctx.arc(smoke.x+Math.cos(an)*r*.3,smoke.y+Math.sin(an)*r*.25,r*.3,0,6.28);ctx.fill()}ctx.restore();if(smoke.t>=1)smoke=null}
+function drawTarget(o){if(o.destroyed)return;let im=targetImgs[o.n];if(!im.complete||!im.naturalWidth)return;let grow=o.b?Math.min(1,(performance.now()-o.b)/350):1,max=150,scale=Math.min(max/im.naturalWidth,max/im.naturalHeight)*grow,w=im.naturalWidth*scale,h=im.naturalHeight*scale;ctx.drawImage(im,o.x-w/2,o.y-h/2,w,h)}
+function drawExplosion(){if(!explosion)return;explosion.t+=.055;let p=Math.min(1,explosion.t),r=explosion.r*p;ctx.save();ctx.translate(explosion.x,explosion.y);ctx.globalAlpha=Math.max(0,1-p*.82);let g=ctx.createRadialGradient(0,0,0,0,0,Math.max(1,r));g.addColorStop(0,'rgba(255,255,220,1)');g.addColorStop(.22,'rgba(255,220,70,.98)');g.addColorStop(.55,'rgba(255,105,20,.88)');g.addColorStop(.82,'rgba(90,35,20,.48)');g.addColorStop(1,'rgba(35,35,35,0)');ctx.fillStyle=g;ctx.beginPath();ctx.arc(0,0,r,0,Math.PI*2);ctx.fill();ctx.strokeStyle='rgba(255,225,120,.9)';ctx.lineWidth=Math.max(2,8*(1-p));ctx.beginPath();ctx.arc(0,0,r*.88,0,Math.PI*2);ctx.stroke();for(let i=0;i<14;i++){let a=i*Math.PI*2/14+.35,rp=r*(.45+.45*((i%4)/3));ctx.fillStyle=i%2?'rgba(255,170,45,.85)':'rgba(80,70,65,.65)';ctx.beginPath();ctx.arc(Math.cos(a)*rp,Math.sin(a)*rp,5+13*p,0,Math.PI*2);ctx.fill()}ctx.restore();if(explosion.t>=1)explosion=null}
+function drawImpact(){if(!impact)return;impact.t+=.045;let t=impact.t;ctx.save();if(impact.kind==='ground'){ctx.globalAlpha=Math.max(0,1-t);ctx.fillStyle='rgba(225,220,205,.9)';for(let i=0;i<6;i++){let a=i*1.047,r=12+t*45;ctx.beginPath();ctx.arc(impact.x+Math.cos(a)*r*.45,impact.y-4-Math.abs(Math.sin(a))*r*.3,8+t*13,0,6.28);ctx.fill()}}else{let fade=Math.max(0,1-t);ctx.globalAlpha=fade;ctx.translate(impact.x,impact.y);ctx.strokeStyle='#ffd45c';ctx.lineWidth=5;for(let i=0;i<10;i++){let a=i*.628,len=22+t*52;ctx.beginPath();ctx.moveTo(Math.cos(a)*8,Math.sin(a)*8);ctx.lineTo(Math.cos(a)*len,Math.sin(a)*len);ctx.stroke()}ctx.fillStyle='rgba(255,190,55,.95)';ctx.beginPath();ctx.arc(0,0,28+t*18,0,6.28);ctx.fill();ctx.fillStyle='rgba(235,235,230,.75)';for(let i=0;i<5;i++){let a=i*1.256,r=22+t*45;ctx.beginPath();ctx.arc(Math.cos(a)*r*.45,-5+Math.sin(a)*r*.3,9+t*10,0,6.28);ctx.fill()}}ctx.restore();if(t>=1)impact=null}
+function draw(){ctx.clearRect(0,0,VW,VH);if(bg.complete)ctx.drawImage(bg,0,0,VW,VH);if(gamePhase==='placement'||gamePhase==='placementDone'){placements.forEach(drawTarget);if(gamePhase==='placement'){trajectory();drawMagicBall();ctx.fillStyle='#fff';ctx.font='900 28px system-ui';ctx.textAlign='center';ctx.fillText('FAS 1 • '+targetNames[placementIndex]+' • Skjut kulan och tryck under flykten',VW/2,55)}drawSmoke();drawSoundButton();return}drawBar(0);drawBar(1);drawCastleDamage();drawCastleSmoke();drawBalloons();drawCastleBombs();if(gamePhase==='battle'){ctx.save();ctx.globalAlpha=.60;ctx.filter='grayscale(1)';(battlePlacements[deviceRole]||[]).filter(o=>!o.destroyed).forEach(drawTarget);ctx.restore()}trajectory();drawSlingshotActive();if(q.fly||!impact)drawProjectile();drawWeaponDock();drawSoundButton();drawExplosion();drawImpact();drawRewardFly();drawGameOver();drawHighscore()}
+function loop(now){let dt=Math.min(.04,(now-last)/1000);last=now;update(dt);draw();requestAnimationFrame(loop)}
+async function landscape(){enterFullscreen()}
+form.addEventListener('submit',async e=>{e.preventDefault();enterFullscreen();names=[(p1.value.trim()||'PLAYER 1').toUpperCase(),'PLAYER 2'];deviceRole=1;setup.style.display='none';try{netmsg('skapar match…');await createOnlineMatch();await waitForJoin()}catch(err){netmsg('offline-läge')}})
+async function joinFromInvite(code,name){try{showJoin('Ansluter…','Skickar förfrågan till Player 1');const rows=await rest('matches?code=eq.'+encodeURIComponent(code)+'&join_status=eq.waiting&select=id,code,player1_name',{method:'GET'});if(!rows||!rows.length)throw new Error('Matchen finns inte eller är upptagen');matchId=rows[0].id;matchCode=rows[0].code;names[0]=rows[0].player1_name||'Player 1';names[1]=(name||'PLAYER 2').toUpperCase();deviceRole=2;await rest('matches?id=eq.'+encodeURIComponent(matchId),{method:'PATCH',body:JSON.stringify({player2_name:names[1],join_status:'requested',player2_joined_at:new Date().toISOString()})});netmsg('online • match '+matchCode);showJoin('Förfrågan skickad','Väntar på att '+names[0]+' accepterar…');clearInterval(joinPoll);joinPoll=roundInterval(async()=>{try{const m=await getMatch();if(m&&m.join_status==='accepted'){clearInterval(joinPoll);startGameSync();netmsg('online • match '+matchCode);showStartButton()}else if(m&&m.join_status==='waiting'){clearInterval(joinPoll);showJoin('Nekad','Player 1 nekade förfrågan.')}}catch(e){}},600)}catch(e){showJoin('Kunde inte ansluta','Kontrollera länken eller be Player 1 skapa en ny match.')}}
+function inviteLanding(){const code=(new URLSearchParams(location.search).get('match')||'').trim().toUpperCase();if(!code)return;setup.style.display='none';showJoin('Du är inbjuden','Matchkod '+code,'<input id="inviteName" maxlength="18" placeholder="Ditt namn"><br><button id="joinInvite">Gå med i spelet</button>');document.getElementById('joinInvite').onclick=async()=>{landscape();joinFromInvite(code,(document.getElementById('inviteName').value.trim()||'PLAYER 2').toUpperCase())}}
+if(window.visualViewport){window.visualViewport.addEventListener('resize',fit);window.visualViewport.addEventListener('scroll',fit)}
+document.getElementById('iosTip').hidden=!(/iPhone|iPod/.test(navigator.userAgent)&&!navigator.standalone);
+addEventListener('resize',fit);addEventListener('orientationchange',()=>roundTimeout(fit,150));fit();resetShot();inviteLanding();requestAnimationFrame(loop);
+</script></body></html>
