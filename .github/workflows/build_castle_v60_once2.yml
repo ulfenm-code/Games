@@ -1,0 +1,31 @@
+name: Build Castle Duel v60
+on:
+  push:
+    paths:
+      - '.github/workflows/build_castle_v60_once2.yml'
+permissions:
+  contents: write
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Generate v60
+        run: python3 Castle/build_v60_rematch.py
+      - name: Verify v60
+        run: |
+          grep -q '<title>Castle Duel v60</title>' Castle/castle_index_60.html
+          grep -q 'castle_bot_60.js' Castle/castle_index_60.html
+          grep -q 'castle_manifest_60.webmanifest' Castle/castle_index_60.html
+          grep -q 'function showRematchRecovery' Castle/castle_index_60.html
+          grep -q 'Nätverksanrop tog för lång tid' Castle/castle_index_60.html
+          node --check Castle/castle_bot_60.js
+      - name: Commit v60
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add Castle/castle_index_60.html Castle/castle_bot_60.js Castle/castle_manifest_60.webmanifest
+          git commit -m 'Add Castle Duel v60 rematch reliability fix'
+          git push
