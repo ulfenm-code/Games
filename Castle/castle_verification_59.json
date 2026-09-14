@@ -1,0 +1,183 @@
+{
+  "version": 59,
+  "baseCommit": "54de5dc1abccce3d9559638307435ea454e8c5ea",
+  "source": "castle_index_59.html",
+  "bot": "castle_bot_59.js",
+  "method": "Actual v59 inline game script and bot module executed together in an isolated JavaScript engine. Rendering, clock, DOM and Supabase transport are replaced by deterministic fixtures. No live match rows or highscores were read or written.",
+  "firstSeed": 10000,
+  "simulation": {
+    "reference": "v57 fixed automated reference opponent, including its legal placement rules, shot choices and reaction delay",
+    "matchesPerLevel": 1000,
+    "results": [
+      {
+        "botCastleWins": 0,
+        "botEnemyBalloonHits": 72,
+        "botFriendlyBalloonHits": 0,
+        "botObjectWins": 210,
+        "botWinPercent": 21,
+        "botWins": 210,
+        "humanWins": 790,
+        "level": "easy",
+        "matches": 1000,
+        "meanSeconds": 53.09865291824222,
+        "meanTurns": 10.05399999999993,
+        "timeouts": 0
+      },
+      {
+        "botCastleWins": 0,
+        "botEnemyBalloonHits": 545,
+        "botFriendlyBalloonHits": 0,
+        "botObjectWins": 494,
+        "botWinPercent": 49.4,
+        "botWins": 494,
+        "humanWins": 506,
+        "level": "medium",
+        "matches": 1000,
+        "meanSeconds": 82.37980592556147,
+        "meanTurns": 15.217999999999915,
+        "timeouts": 0
+      },
+      {
+        "botCastleWins": 295,
+        "botEnemyBalloonHits": 1071,
+        "botFriendlyBalloonHits": 0,
+        "botObjectWins": 614,
+        "botWinPercent": 90.9,
+        "botWins": 909,
+        "humanWins": 91,
+        "level": "hard",
+        "matches": 1000,
+        "meanSeconds": 123.77495602793192,
+        "meanTurns": 16.746999999999908,
+        "timeouts": 0
+      }
+    ]
+  },
+  "tacticalOpponent": {
+    "description": "Same reference aiming and placement profile, additionally using the full 60-second balloon waiting strategy",
+    "matchesPerLevel": 300,
+    "results": [
+      {
+        "botFriendlyBalloonHits": 0,
+        "botWinPercent": 24.666666666666668,
+        "botWins": 74,
+        "humanWins": 226,
+        "level": "easy",
+        "matches": 300,
+        "reference": "referenceTactical",
+        "timeouts": 0
+      },
+      {
+        "botFriendlyBalloonHits": 0,
+        "botWinPercent": 48,
+        "botWins": 144,
+        "humanWins": 156,
+        "level": "medium",
+        "matches": 300,
+        "reference": "referenceTactical",
+        "timeouts": 0
+      },
+      {
+        "botFriendlyBalloonHits": 0,
+        "botWinPercent": 88,
+        "botWins": 264,
+        "humanWins": 36,
+        "level": "hard",
+        "matches": 300,
+        "reference": "referenceTactical",
+        "timeouts": 0
+      }
+    ]
+  },
+  "verification": {
+    "arrows": {
+      "arrowsChecked": 12990,
+      "blockedWithoutAmmoPasses": true,
+      "botEchoDoesNotRestartShot": true,
+      "enemyHits": 12916,
+      "humanOpponentShotStillReceived": true,
+      "knownCases": [
+        {
+          "name": "clear enemy",
+          "result": "enemy",
+          "weapon": "arrow"
+        },
+        {
+          "name": "friendly blocks direct arc",
+          "result": "enemy",
+          "weapon": "arrow"
+        },
+        {
+          "name": "friendly covers launch point",
+          "result": "non-arrow",
+          "weapon": "bomb"
+        },
+        {
+          "name": "overlapping balloons",
+          "result": "non-arrow",
+          "weapon": "bomb"
+        }
+      ],
+      "misses": 74,
+      "nonArrowChoices": 7670,
+      "ownHits": 0,
+      "scenes": 12000,
+      "sourceVersion": 59,
+      "timingCases": [
+        "60 fps",
+        "25 fps",
+        "30 fps + 1 s launch delay"
+      ]
+    },
+    "checks": {
+      "ballisticSolutions": 802,
+      "balloonCastleVictory": true,
+      "bombAreaDamage": true,
+      "hiddenAccessChecks": 150,
+      "networkDisabled": true,
+      "placementsReplayed": 3200,
+      "projectileCollision": true,
+      "rewardBoundaryChecks": 6
+    },
+    "regressions": {
+      "checks": [
+        "60-second clock runs for bot and human; a timeout advances once",
+        "Repeated polls preserve the turn deadline",
+        "Impact animation locks input; old callbacks cannot skip a turn",
+        "Late placement responses cannot restore a previous result",
+        "Late highscore requests, timers and countdown frames are discarded",
+        "Selecting each bot level after GAME OVER starts a fresh match",
+        "Twelve consecutive bot rematches reset all match state",
+        "Online guest waits for host cleanup and never deletes placements",
+        "Duplicate rematch preparation is idempotent",
+        "Simultaneous rematch requests complete the handshake",
+        "Rematch still starts when a poll misses the short consent state",
+        "Castle events do not consume, replace or restart real projectiles",
+        "In-flight synchronization cannot alter the next round",
+        "Shared aim and launch match 544 physics samples on both sides for all weapons",
+        "Cancelled touch resets aiming without firing",
+        "Fullscreen cannot block starting; portrait fallback preserves touch coordinates",
+        "Initial START requests fullscreen inside the user gesture",
+        "Waiting uses visible balloons, bomb flight, both castle health values and remaining turn time",
+        "Easy, medium and hard have distinct time strategies; waiting stops for danger or deadline",
+        "Actual controller spends about 30 seconds waiting for its balloon to win before firing",
+        "Actual controller rechecks waiting and shoots when a new threat appears"
+      ],
+      "networkDisabled": true,
+      "passed": 21,
+      "physicalIPhoneTested": false,
+      "trajectorySamples": 544
+    }
+  },
+  "limitations": [
+    "Win rates describe these automated opponents, not a predicted probability against a particular human.",
+    "No physical iPhone, Safari rendering, native fullscreen or orientation permission was tested.",
+    "Online lifecycle fixtures mock transport responses; no live two-phone Supabase session was exercised.",
+    "The headless simulator runs deterministic 120 Hz projectile integration; idle simulation advances up to 250 ms and active animations at 60 fps."
+  ],
+  "reproduce": [
+    "node Castle/castle_simulator_59.mjs --verify --scenes 2000",
+    "node Castle/castle_simulator_59.mjs --count 1000 --seed 10000",
+    "node Castle/castle_simulator_59.mjs --count 300 --seed 10000 --reference referenceTactical --out castle_simulation_59_tactical_local.json"
+  ]
+}
