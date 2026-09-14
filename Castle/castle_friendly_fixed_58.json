@@ -1,0 +1,97 @@
+{
+  "source": "castle_index_58.html",
+  "sourceSha256": "bdc4afe68c0c150daa3f06cb66ece9166e9d776bd5ea623f8b78b7832c2885a4",
+  "botSha256": "a25ce6cedfa6da98570a6ff229653f5b7cf3b09e175c7d9e4a149eadf38a30b7",
+  "firstSeed": 4000000,
+  "countPerLevel": 1000,
+  "reference": "reference",
+  "targetSizes": [
+    {
+      "w": 150,
+      "h": 100
+    },
+    {
+      "w": 150,
+      "h": 137.08079268292684
+    },
+    {
+      "w": 150,
+      "h": 137.08079268292684
+    },
+    {
+      "w": 150,
+      "h": 137.08079268292684
+    }
+  ],
+  "physicsStep": 0.008333333333333333,
+  "profiles": {
+    "easy": {
+      "defend": 0.22,
+      "error": 0.17,
+      "memory": 0.15,
+      "explore": 0.7,
+      "delay": 2,
+      "spread": 0.1,
+      "aerial": 0.1,
+      "bombSkill": 0.2
+    },
+    "medium": {
+      "defend": 0.75,
+      "error": 0.032,
+      "memory": 0.65,
+      "explore": 0.28,
+      "delay": 2.4,
+      "spread": 0.7,
+      "aerial": 0.45,
+      "bombSkill": 0.65,
+      "shelter": 0.07
+    },
+    "hard": {
+      "defend": 1,
+      "error": 0.006,
+      "memory": 1,
+      "explore": 0.05,
+      "delay": 1.3,
+      "spread": 1,
+      "aerial": 0.75,
+      "bombSkill": 1,
+      "shelter": 0.9
+    },
+    "reference": {
+      "defend": 0.64,
+      "error": 0.045,
+      "memory": 0.65,
+      "explore": 0.25,
+      "delay": 4.5,
+      "spread": 0.75,
+      "aerial": 0.4,
+      "bombSkill": 0.65
+    }
+  },
+  "results": [
+    {
+      "level": "hard",
+      "matches": 1000,
+      "botWins": 765,
+      "humanWins": 232,
+      "timeouts": 3,
+      "botObjectWins": 765,
+      "botCastleWins": 0,
+      "humanObjectWins": 232,
+      "humanCastleWins": 0,
+      "meanSeconds": 122.47829757426119,
+      "meanTurns": 25.915999999999872,
+      "botArrows": 0.9400000000000007,
+      "humanArrows": 5.773999999999989,
+      "botFriendlyBalloonHits": 0,
+      "botEnemyBalloonHits": 940,
+      "botGamesWithFriendlyHits": 0,
+      "botWinPercent": 76.5,
+      "confidence95": [
+        73.77374064294858,
+        79.02344115732525
+      ]
+    }
+  ],
+  "elapsedWallSeconds": 3.115
+}
