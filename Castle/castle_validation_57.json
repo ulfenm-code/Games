@@ -1,0 +1,134 @@
+{
+  "source": "castle_index_57.html",
+  "sourceSha256": "ec7bb2a326adab3b5a51404a057005633c851f520d18962698b5e5f7d0b3ed27",
+  "botSha256": "d6292b1c2f6805a6e4c842cffc834bc4e024229e61932f455fadb6bf76ef6f69",
+  "firstSeed": 1000000,
+  "countPerLevel": 5000,
+  "reference": "reference",
+  "targetSizes": [
+    {
+      "w": 150,
+      "h": 100
+    },
+    {
+      "w": 150,
+      "h": 137.08079268292684
+    },
+    {
+      "w": 150,
+      "h": 137.08079268292684
+    },
+    {
+      "w": 150,
+      "h": 137.08079268292684
+    }
+  ],
+  "physicsStep": 0.008333333333333333,
+  "profiles": {
+    "easy": {
+      "defend": 0.22,
+      "error": 0.17,
+      "memory": 0.15,
+      "explore": 0.7,
+      "delay": 2,
+      "spread": 0.1,
+      "aerial": 0.1,
+      "bombSkill": 0.2
+    },
+    "medium": {
+      "defend": 0.75,
+      "error": 0.032,
+      "memory": 0.65,
+      "explore": 0.28,
+      "delay": 2.4,
+      "spread": 0.7,
+      "aerial": 0.45,
+      "bombSkill": 0.65,
+      "shelter": 0.07
+    },
+    "hard": {
+      "defend": 1,
+      "error": 0.006,
+      "memory": 1,
+      "explore": 0.05,
+      "delay": 1.3,
+      "spread": 1,
+      "aerial": 0.75,
+      "bombSkill": 1,
+      "shelter": 0.9
+    },
+    "reference": {
+      "defend": 0.64,
+      "error": 0.045,
+      "memory": 0.65,
+      "explore": 0.25,
+      "delay": 4.5,
+      "spread": 0.75,
+      "aerial": 0.4,
+      "bombSkill": 0.65
+    }
+  },
+  "results": [
+    {
+      "level": "easy",
+      "matches": 5000,
+      "botWins": 1000,
+      "humanWins": 4000,
+      "timeouts": 0,
+      "botObjectWins": 1000,
+      "botCastleWins": 0,
+      "humanObjectWins": 3998,
+      "humanCastleWins": 2,
+      "meanSeconds": 54.08466140579812,
+      "meanTurns": 10.19260000000015,
+      "botArrows": 0.13460000000000105,
+      "humanArrows": 0.7735999999999872,
+      "botWinPercent": 20,
+      "confidence95": [
+        18.91449439152825,
+        21.131567725173298
+      ]
+    },
+    {
+      "level": "medium",
+      "matches": 5000,
+      "botWins": 2596,
+      "humanWins": 2397,
+      "timeouts": 7,
+      "botObjectWins": 2595,
+      "botCastleWins": 1,
+      "humanObjectWins": 2397,
+      "humanCastleWins": 0,
+      "meanSeconds": 88.27521669572498,
+      "meanTurns": 16.258799999999948,
+      "botArrows": 0.9871999999999673,
+      "humanArrows": 2.439799999999922,
+      "botWinPercent": 51.92,
+      "confidence95": [
+        50.53417526958719,
+        53.30287675494392
+      ]
+    },
+    {
+      "level": "hard",
+      "matches": 5000,
+      "botWins": 3918,
+      "humanWins": 1042,
+      "timeouts": 40,
+      "botObjectWins": 3918,
+      "botCastleWins": 0,
+      "humanObjectWins": 1042,
+      "humanCastleWins": 0,
+      "meanSeconds": 132.78121578293394,
+      "meanTurns": 28.10039999999997,
+      "botArrows": 1.6747999999999277,
+      "humanArrows": 6.903600000000226,
+      "botWinPercent": 78.36,
+      "confidence95": [
+        77.19705568372268,
+        79.47940026195546
+      ]
+    }
+  ],
+  "elapsedWallSeconds": 33.877
+}
