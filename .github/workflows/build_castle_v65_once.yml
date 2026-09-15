@@ -1,0 +1,145 @@
+name: Build Castle Duel v65 once
+
+on:
+  push:
+    paths:
+      - '.github/workflows/build_castle_v65_once.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  build-v65:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Build v65 from verified v63 source
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          cp Castle/castle_bot_63.js Castle/castle_bot_65.js
+          cp Castle/castle_game_63.js Castle/castle_game_65.js
+
+          python3 - <<'PY'
+          from pathlib import Path
+
+          bot = Path('Castle/castle_bot_65.js')
+          s = bot.read_text(encoding='utf-8')
+          s = s.replace('Castle Duel v63', 'Castle Duel v65')
+          s = s.replace('CastleBot63', 'CastleBot65')
+          bot.write_text(s, encoding='utf-8')
+
+          game = Path('Castle/castle_game_65.js')
+          s = game.read_text(encoding='utf-8')
+          s = s.replace('CastleBot63', 'CastleBot65')
+          s = s.replace('castle_index_63.html', 'castle_index_65.html')
+          game.write_text(s, encoding='utf-8')
+          PY
+
+          cat > Castle/castle_manifest_65.webmanifest <<'EOF'
+          {
+            "name": "Castle Duel",
+            "short_name": "Castle Duel",
+            "id": "castle_index_65.html",
+            "start_url": "castle_index_65.html",
+            "scope": "./",
+            "display": "fullscreen",
+            "orientation": "landscape",
+            "background_color": "#0a0d12",
+            "theme_color": "#0a0d12",
+            "lang": "sv"
+          }
+          EOF
+
+          cat > Castle/castle_index_65.html <<'EOF'
+          <!doctype html><html lang="sv"><head><meta charset="utf-8">
+          <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+          <meta name="theme-color" content="#0a0d12">
+          <meta name="apple-mobile-web-app-capable" content="yes">
+          <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+          <meta name="apple-mobile-web-app-title" content="Castle Duel">
+          <link rel="manifest" href="castle_manifest_65.webmanifest">
+          <title>Castle Duel v65</title>
+          <style>
+          html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#0a0d12;touch-action:none;font-family:system-ui}
+          #wrap{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);transform-origin:center;aspect-ratio:16/9}
+          canvas{display:block;width:100%;height:100%;touch-action:none}
+          #setup{position:fixed;inset:0;display:none;place-items:center;background:#0008;z-index:4}
+          #countdown{position:fixed;inset:0;display:none;place-items:center;background:#0009;z-index:5;color:white;text-align:center}
+          #countdown .num{font:900 clamp(72px,18vw,180px) system-ui;line-height:.9;text-shadow:0 6px 15px #000}
+          #countdown .txt{font:800 clamp(18px,4vw,34px) system-ui;margin-top:18px;text-shadow:0 3px 8px #000}
+          .card{width:min(520px,84vw);max-height:80dvh;overflow:auto;background:#f0d6a4;border:5px solid #79501f;border-radius:18px;padding:18px 22px;text-align:center;color:#24170d}
+          label{font-weight:900;display:block;margin-bottom:5px}input{text-transform:uppercase;box-sizing:border-box;width:100%;font-size:17px;padding:11px;border:2px solid #8b6a42;border-radius:9px}
+          button{font:900 19px system-ui;padding:12px 25px;border:3px solid #5b3d13;border-radius:12px;background:#299a34;color:white;margin-top:16px}
+          .start-row{display:flex;gap:10px;align-items:stretch;justify-content:center;margin-top:16px}.start-row button{margin-top:0}.start-row button[type=submit]{flex:1}.debug-start{font:800 13px system-ui;padding:8px 12px;background:#6d5b49;max-width:180px}
+          .ios-tip{font-size:14px;line-height:1.4;margin:12px 0 0}
+          #net{display:none;position:fixed;left:10px;bottom:8px;z-index:8;background:#000a;color:#fff;font:700 12px system-ui;padding:5px 8px;border-radius:8px;pointer-events:none}
+          #joinFlow{position:fixed;inset:0;z-index:20;display:none;align-items:center;justify-content:center;background:#000b}
+          #joinCard{width:min(560px,88vw);background:#3b2418;color:white;border:4px solid #e6b94b;border-radius:22px;padding:24px;text-align:center;font:700 20px system-ui}
+          #joinCard h2{margin:0 0 12px;font-size:30px}#joinCard button{font:800 20px system-ui;padding:12px 22px;margin:8px;border:0;border-radius:14px}
+          #joinCard input{font:700 20px system-ui;padding:12px;width:min(300px,75%);margin:7px;border-radius:12px;border:2px solid #ddd;text-transform:uppercase}
+
+          #welcome{position:fixed;inset:0;z-index:30;display:flex;align-items:center;justify-content:center;overflow:hidden;background:#07111d;color:#fff;cursor:pointer}
+          .welcome-stage{position:relative;width:min(100vw,177.7778vh);height:min(56.25vw,100vh);background:url('castle_welcome_65.jpg') center/100% 100% no-repeat;box-shadow:0 0 40px #000}
+          #aboutBtn{position:absolute;left:50%;bottom:2.7%;transform:translateX(-50%);width:27%;height:9.5%;min-width:190px;border:0;border-radius:999px;background:transparent;color:transparent;margin:0;padding:0;cursor:pointer;box-shadow:none}
+          #aboutBtn:focus-visible{outline:4px solid #fff;outline-offset:4px}
+
+          #aboutOverlay{position:fixed;inset:0;z-index:40;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.78);padding:18px;box-sizing:border-box}
+          #aboutCard{width:min(900px,94vw);max-height:88vh;overflow:auto;background:linear-gradient(180deg,#f3ddb0,#dfbd7f);color:#24170d;border:5px solid #6d4618;border-radius:24px;padding:22px 26px 26px;box-sizing:border-box;box-shadow:0 18px 60px #000b;text-align:left}
+          #aboutCard h2{text-align:center;margin:0 0 12px;font:1000 clamp(28px,4vw,46px) system-ui;color:#482a0e}#aboutCard p{font:650 clamp(15px,1.7vw,20px) system-ui;line-height:1.38;margin:10px 0}
+          .weapon-help{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:16px 0}.weapon-help-item{display:grid;grid-template-columns:80px 1fr;gap:12px;align-items:center;background:#fff8e8aa;border:2px solid #9f7135;border-radius:14px;padding:10px}.weapon-help-item img{width:72px;height:58px;object-fit:contain}.weapon-help-item strong{display:block;font:900 18px system-ui;margin-bottom:3px}.weapon-help-item span{font:650 15px/1.28 system-ui}
+          .about-balloon{display:flex;gap:14px;align-items:center;background:#6d46181a;border-radius:14px;padding:10px 12px;margin-top:12px}.about-balloon img{width:54px;height:68px;object-fit:contain}.about-balloon .balloons{display:flex;gap:4px;flex:0 0 auto}
+          #aboutClose{display:block;margin:16px auto 0;background:#654018;border-color:#3f250b;padding:10px 34px}
+          @media(max-width:800px),(max-height:560px){.weapon-help{grid-template-columns:1fr}.weapon-help-item{grid-template-columns:64px 1fr}.weapon-help-item img{width:58px;height:48px}#aboutCard{padding:16px 18px}}
+          </style></head><body>
+
+          <div id="welcome" aria-label="Välkommen till Castle Duel"><div class="welcome-stage"><button id="aboutBtn" type="button" aria-label="Om spelet">OM SPELET</button></div></div>
+
+          <div id="aboutOverlay" aria-hidden="true"><div id="aboutCard">
+            <h2>SÅ SPELAR DU CASTLE DUEL</h2>
+            <p><strong>Castle Duel</strong> är ett strategiskt tvåspelarspel. I <strong>fas 1</strong> placerar du ut fyra hemliga mål på din sida genom att skjuta ut dem med slangbellan. När båda spelarna har placerat sina fyra mål börjar striden.</p>
+            <p>Spelarna turas sedan om att skjuta. Du vinner genom att antingen <strong>förstöra alla fyra av motståndarens dolda mål</strong> eller <strong>förstöra motståndarens borg</strong>.</p>
+            <div class="weapon-help">
+              <div class="weapon-help-item"><img src="CanonBall.png" alt="Kanonkula"><div><strong>KANONKULA</strong><span>Följer en bågformad bana och förstör ett mål om du träffar det.</span></div></div>
+              <div class="weapon-help-item"><img src="Bomb.png" alt="Bomb"><div><strong>BOMB</strong><span>Följer en bågformad bana och exploderar över ett större område. Den kan förstöra flera mål samtidigt. Tryck på skärmen medan bomben flyger för att detonera den i luften.</span></div></div>
+              <div class="weapon-help-item"><img src="Rocket.png" alt="Raket"><div><strong>RAKET</strong><span>Flyger rakt fram utan att påverkas av gravitationen. Den förstör ett mål vid direktträff och är särskilt användbar för mål högt upp eller när du vill skjuta längs en rak linje.</span></div></div>
+              <div class="weapon-help-item"><img src="Arrow.png" alt="Pil"><div><strong>PIL</strong><span>Används för att skjuta ner ballonger. Pilar förstör inte de fyra dolda målen. När du skjuter ner en av motståndarens ballonger får du ett extra skott – en kanonkula, bomb eller raket.</span></div></div>
+            </div>
+            <div class="about-balloon"><div class="balloons"><img src="BallonRed.png" alt="Röd ballong"><img src="BallonBlue.png" alt="Blå ballong"></div><p>Ballongerna är också en del av striden. Om en ballong når motståndarens borg släpper den en bomb och skadar borgen. Därför kan du både använda ballongerna offensivt och försöka skjuta ner motståndarens innan de når din borg.</p></div>
+            <p style="text-align:center"><strong>Varje tur är tidsbegränsad till 60 sekunder.</strong></p>
+            <button id="aboutClose" type="button">STÄNG</button>
+          </div></div>
+
+          <div id="joinFlow"><div id="joinCard"><h2 id="joinTitle">Online multiplayer</h2><div id="joinText"></div><div id="joinControls"></div></div></div>
+          <div id="net">Castle-Duel: ansluter…</div>
+          <div id="wrap"><canvas id="c" width="1600" height="900"></canvas></div>
+          <div id="setup"><form class="card" id="form"><div><label>Player 1</label><input id="p1" maxlength="18" placeholder="Skriv namn..." required></div><div class="start-row"><button type="submit">STARTA SPEL</button><button type="button" id="debugStart" class="debug-start">STARTA I DEBUG-LÄGE</button></div><p id="iosTip" class="ios-tip" hidden>För helskärm på iPhone: Dela → Lägg till på hemskärmen → Öppna som webbapp.</p></form></div>
+          <div id="countdown"><div><div class="num" id="countNum">5</div><div class="txt">Vrid telefonen till liggande läge</div></div></div>
+          <script src="castle_bot_65.js"></script>
+          <script src="castle_game_65.js"></script>
+          </body></html>
+          EOF
+
+          node --check Castle/castle_bot_65.js
+          node --check Castle/castle_game_65.js
+          test -s Castle/castle_welcome_65.jpg
+
+          if grep -E 'CastleBot63|castle_(index|bot|game|manifest)_63' Castle/castle_bot_65.js Castle/castle_game_65.js Castle/castle_index_65.html Castle/castle_manifest_65.webmanifest; then
+            echo 'Old v63 reference found in v65 runtime files' >&2
+            exit 1
+          fi
+
+      - name: Commit v65
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add Castle/castle_bot_65.js Castle/castle_game_65.js Castle/castle_index_65.html Castle/castle_manifest_65.webmanifest Castle/castle_welcome_65.jpg
+          git commit -m "Add Castle Duel v65 with approved welcome screen"
+          git push
