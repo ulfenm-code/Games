@@ -1,0 +1,94 @@
+name: Build Castle Duel v66 once
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/build_castle_v66_once.yml'
+      - 'Castle/castle_welcome_66.jpg'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Build v66 from v65 source
+        shell: bash
+        run: |
+          set -euo pipefail
+          test ! -e Castle/castle_index_66.html
+          test ! -e Castle/castle_game_66.js
+          test ! -e Castle/castle_bot_66.js
+          test ! -e Castle/castle_manifest_66.webmanifest
+          test -s Castle/castle_welcome_66.jpg
+
+          cp Castle/castle_index_65.html Castle/castle_index_66.html
+          cp Castle/castle_game_65.js Castle/castle_game_66.js
+          cp Castle/castle_bot_65.js Castle/castle_bot_66.js
+          cp Castle/castle_manifest_65.webmanifest Castle/castle_manifest_66.webmanifest
+
+          python3 - <<'PY'
+          from pathlib import Path
+          replacements = {
+              'Castle/castle_index_66.html': [
+                  ('castle_manifest_65.webmanifest','castle_manifest_66.webmanifest'),
+                  ('Castle Duel v65','Castle Duel v66'),
+                  ('castle_welcome_65.jpg','castle_welcome_66.jpg'),
+                  ('castle_bot_65.js','castle_bot_66.js'),
+                  ('castle_game_65.js','castle_game_66.js'),
+              ],
+              'Castle/castle_game_66.js': [
+                  ('CastleBot65','CastleBot66'),
+                  ('castle_index_65.html','castle_index_66.html'),
+              ],
+              'Castle/castle_bot_66.js': [
+                  ('Castle Duel v65','Castle Duel v66'),
+                  ('CastleBot65','CastleBot66'),
+              ],
+              'Castle/castle_manifest_66.webmanifest': [
+                  ('castle_index_65.html','castle_index_66.html'),
+              ],
+          }
+          for name, reps in replacements.items():
+              p = Path(name)
+              s = p.read_text(encoding='utf-8')
+              for old,new in reps:
+                  if old not in s:
+                      raise SystemExit(f'Missing expected token {old!r} in {name}')
+                  s = s.replace(old,new)
+              p.write_text(s,encoding='utf-8')
+
+          checks = {
+              'Castle/castle_index_66.html': ['castle_manifest_66.webmanifest','Castle Duel v66','castle_welcome_66.jpg','castle_bot_66.js','castle_game_66.js'],
+              'Castle/castle_game_66.js': ['CastleBot66','castle_index_66.html'],
+              'Castle/castle_bot_66.js': ['Castle Duel v66','CastleBot66'],
+              'Castle/castle_manifest_66.webmanifest': ['castle_index_66.html'],
+          }
+          for name,tokens in checks.items():
+              s=Path(name).read_text(encoding='utf-8')
+              for token in tokens:
+                  if token not in s:
+                      raise SystemExit(f'v66 validation failed: {token} missing from {name}')
+              for stale in ['castle_index_65.html','castle_game_65.js','castle_bot_65.js','castle_manifest_65.webmanifest','castle_welcome_65.jpg','CastleBot65']:
+                  if stale in s:
+                      raise SystemExit(f'v66 validation failed: stale runtime reference {stale} in {name}')
+          PY
+
+          node --check Castle/castle_game_66.js
+          node --check Castle/castle_bot_66.js
+
+      - name: Commit v66
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add Castle/castle_index_66.html Castle/castle_game_66.js Castle/castle_bot_66.js Castle/castle_manifest_66.webmanifest
+          git commit -m 'Add Castle Duel v66 with corrected welcome image'
+          git push
