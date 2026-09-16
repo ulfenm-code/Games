@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="sv">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Bartender Lab 2 – Terra low</title>
+<style>
+:root{color-scheme:dark;--bg:#0c0d12;--panel:#171922;--panel2:#22252f;--text:#f6f3ed;--muted:#aaa9b0;--accent:#f0b94d;--good:#83d49f;--bad:#ff8d8d}*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at 50% -15%,#36313b,#0c0d12 52%);color:var(--text);font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;min-height:100dvh}.wrap{width:min(920px,100%);margin:auto;min-height:100dvh;display:flex;flex-direction:column;padding:14px}.top{background:#11131aeb;border:1px solid #ffffff16;border-radius:20px;padding:14px 16px;margin-bottom:10px}.version{font-size:11px;letter-spacing:.12em;color:var(--accent);font-weight:900}.top h1{font-size:23px;margin:4px 0 5px}.top p{margin:0;color:var(--muted);font-size:13px;line-height:1.4}.chips{display:flex;flex-wrap:wrap;gap:7px;margin-top:10px}.chip{font-size:11px;padding:6px 9px;border-radius:999px;background:#ffffff0d;border:1px solid #ffffff12}.recipe{margin-top:10px;padding:10px 12px;border-radius:13px;background:#ffffff08;font-size:13px}.recipe b{color:var(--accent)}.chat{flex:1;overflow:auto;padding:6px 2px 170px;scroll-behavior:smooth}.row{display:flex;margin:8px 0}.bubble{max-width:min(78%,660px);padding:11px 13px;border-radius:16px;line-height:1.42;white-space:pre-wrap}.alex{justify-content:flex-start}.alex .bubble{background:var(--panel2);border-bottom-left-radius:5px}.me{justify-content:flex-end}.me .bubble{background:#664d20;border-bottom-right-radius:5px}.who{font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:4px}.debug{font-size:11px;color:var(--good);margin:3px 10px 10px;text-align:right}.composer{position:fixed;left:50%;transform:translateX(-50%);bottom:0;width:min(920px,100%);padding:10px 14px max(10px,env(safe-area-inset-bottom));background:linear-gradient(transparent,#0c0d12 18%,#0c0d12 100%)}.inputbox{background:#171922;border:1px solid #ffffff1b;border-radius:18px;padding:8px;display:flex;gap:7px;align-items:flex-end;box-shadow:0 15px 40px #0008}textarea{flex:1;resize:none;min-height:48px;max-height:130px;border:0;outline:0;background:transparent;color:#fff;font:inherit;padding:9px}button{border:0;border-radius:13px;padding:11px 13px;font:inherit;font-weight:800;cursor:pointer;background:var(--accent);color:#171209}button.secondary{background:#2a2d38;color:#fff}.actions{display:flex;gap:6px}.status{font-size:11px;color:var(--muted);padding:6px 4px 0;min-height:20px}.thinking{opacity:.7}.error{color:var(--bad)}@media(max-width:600px){.bubble{max-width:88%}.top h1{font-size:20px}.actions{flex-direction:column}button{padding:9px 11px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <div class="version">BARTENDER LAB 2 · INTE SPELVERSION 1.14</div>
+    <h1>Terra – snabbare samtalstest</h1>
+    <p>Det här är samma friare bartenderidé, men optimerad för svarstid. Lab 1 är orörd så att du kan jämföra.</p>
+    <div class="chips"><span class="chip">GPT-5.6 Terra</span><span class="chip">reasoning: low</span><span class="chip">verbosity: low</span><span class="chip">ett AI-anrop per replik</span><span class="chip">prompt cache key</span></div>
+    <div class="recipe"><b>Bakgrundsfråga i testet:</b> Vilken ört hör hemma i en Mojito? <span style="color:#aaa">(facit: Mynta)</span><br><span style="color:#aaa">Prata fritt. Svarstiden visas efter varje replik så att du kan jämföra med Lab 1.</span></div>
+  </div>
+  <div id="chat" class="chat"></div>
+</div>
+<div class="composer">
+  <div class="inputbox">
+    <textarea id="input" placeholder="Säg vad du vill till Alex…" rows="2"></textarea>
+    <div class="actions"><button id="send">Skicka</button><button id="mic" class="secondary">🎙️</button><button id="reset" class="secondary">Nollställ</button></div>
+  </div>
+  <div id="status" class="status"></div>
+</div>
+<script>
+'use strict';
+const ENDPOINT='https://azoytlshxfbxbrsqdvvn.supabase.co/functions/v1/bar-bartender-lab-v2';
+const APIKEY='sb_publishable_OVGQTPYpZEhD9tdRP57IOg_8UwKU2Jd';
+const chat=document.getElementById('chat'),input=document.getElementById('input'),statusEl=document.getElementById('status');
+let history=[],busy=false;
+const game={phase:'recipe',playerName:'Ulf',drink:'Mojito',difficulty:'medium',currentQuestion:'Vilken ört hör hemma i en Mojito?',expectedAnswer:'Mynta'};
+function bubble(speaker,text){const row=document.createElement('div');row.className='row '+(speaker==='player'?'me':'alex');const b=document.createElement('div');b.className='bubble';const who=document.createElement('div');who.className='who';who.textContent=speaker==='player'?'Du':'Alex';const t=document.createElement('div');t.textContent=text;b.append(who,t);row.append(b);chat.append(row);chat.scrollTop=chat.scrollHeight}
+function debug(text){const d=document.createElement('div');d.className='debug';d.textContent=text;chat.append(d);chat.scrollTop=chat.scrollHeight}
+function setStatus(t,cls=''){statusEl.className='status '+cls;statusEl.textContent=t}
+function speak(t){try{speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(t);u.lang='sv-SE';u.rate=.97;speechSynthesis.speak(u)}catch(e){}}
+async function send(){if(busy)return;const message=input.value.trim();if(!message)return;busy=true;input.value='';bubble('player',message);setStatus('Alex tänker…','thinking');document.getElementById('send').disabled=true;document.getElementById('mic').disabled=true;const started=performance.now();try{const r=await fetch(ENDPOINT,{method:'POST',headers:{'Content-Type':'application/json','apikey':APIKEY},body:JSON.stringify({message,history,game})});const data=await r.json().catch(()=>({}));if(!r.ok)throw new Error((data.error||('HTTP '+r.status))+(data.detail?' · '+data.detail:''));const reply=String(data.reply||'').trim()||'Jag hänger med.';history.push({speaker:'player',text:message},{speaker:'bartender',text:reply});bubble('bartender',reply);if(Array.isArray(data.tool_calls)&&data.tool_calls.length){debug('Spelmotorn registrerade receptsvar: '+data.tool_calls.map(x=>x.answer_text).join(', '))}const total=Math.round(performance.now()-started);const server=Number(data.server_ms)||0;setStatus('Terra · low · svarstid '+(total/1000).toFixed(2)+' s'+(server?' · AI/server '+(server/1000).toFixed(2)+' s':'')+' · '+history.length+' repliker i minnet');speak(reply)}catch(e){console.error(e);setStatus('Fel: '+e.message,'error')}finally{busy=false;document.getElementById('send').disabled=false;document.getElementById('mic').disabled=false;input.focus()}}
+function reset(){history=[];chat.innerHTML='';bubble('bartender','Hej! Jag heter Alex. Slå dig ner. Vi testar samma samtal som tidigare, men nu med snabbare inställningar.');setStatus('Nytt samtal · Terra · low')}
+document.getElementById('send').onclick=send;document.getElementById('reset').onclick=reset;input.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();send()}});
+document.getElementById('mic').onclick=()=>{const SR=window.SpeechRecognition||window.webkitSpeechRecognition;if(!SR){setStatus('Taligenkänning stöds inte i den här webbläsaren.','error');return}try{speechSynthesis.cancel();const r=new SR();r.lang='sv-SE';r.interimResults=false;r.maxAlternatives=1;r.onstart=()=>setStatus('Lyssnar…');r.onresult=e=>{input.value=e.results[0][0].transcript;send()};r.onerror=()=>setStatus('Jag hörde inte tydligt. Försök igen.','error');r.start()}catch(e){setStatus('Mikrofonen kunde inte startas.','error')}};
+reset();
+</script>
+</body>
+</html>
