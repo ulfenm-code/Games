@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="sv">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no" />
+<meta name="theme-color" content="#101014" />
+<title>Bar Game – Version 1.1</title>
+<link rel="stylesheet" href="bar_v1_1.css">
+</head>
+<body>
+<div id="toast"></div>
+
+<section id="startScreen" class="screen active center">
+  <div class="card">
+    <h1 class="title">BAR GAME</h1>
+    <p class="subtitle">Blanda, skaka och smaka. Telefonen blir en del av spelet.</p>
+    <label for="nameInput">Ditt namn</label>
+    <input id="nameInput" autocomplete="name" maxlength="24" placeholder="Till exempel Ulf" />
+    <label for="ageInput">Din ålder</label>
+    <input id="ageInput" inputmode="numeric" type="number" min="1" max="120" placeholder="18" />
+    <div class="error" id="startError"></div>
+    <div class="row">
+      <button class="btn" id="enterBtn">Gå in i baren</button>
+      <button class="btn secondary" id="sensorBtn">Tillåt rörelsesensorer</button>
+    </div>
+    <p class="small">På iPhone kan spelet behöva be om tillstånd innan skakning och lutning fungerar.</p>
+  </div>
+</section>
+
+<section id="moodScreen" class="screen center">
+  <div class="card">
+    <div class="bartender-portrait"><div class="bartender-mouth"></div></div>
+    <h2 id="moodHello">Välkommen!</h2>
+    <p id="moodPrompt">Vilket mood är du på idag?</p>
+    <div class="moods" id="moodButtons">
+      <button class="mood" data-mood="party"><b>🎉 Festligt och färgglatt</b><span>Puls, city lights och drinkar med lite mer show.</span></button>
+      <button class="mood" data-mood="tropical"><b>🌴 Tropiskt och avslappnat</b><span>Bambu, palmer och semesterkänsla.</span></button>
+      <button class="mood" data-mood="classic"><b>🥃 Lugnt och klassiskt</b><span>Mörkt trä, Manhattan-känsla och klassiker.</span></button>
+      <button class="mood" data-mood="elegant"><b>🍸 Elegant och exklusivt</b><span>Hotellbar, varm belysning och finare servering.</span></button>
+      <button class="mood" data-mood="surprise"><b>🎲 Överraska mig</b><span>Bartendern väljer miljö.</span></button>
+    </div>
+  </div>
+</section>
+
+<section id="barScreen" class="screen">
+  <div id="barScene" class="tropical">
+    <div class="ambient"></div>
+    <div class="shelf"><div class="bottles" id="bottles"></div></div>
+    <div class="bartender">
+      <div class="head"><div class="hair"></div><div class="eye l"></div><div class="eye r"></div><div class="smile"></div></div>
+      <div class="body"><div class="apron"></div></div>
+    </div>
+    <div class="barcounter"><div class="counter-items">
+      <div class="ingredient"><span class="icon">🍋</span>Citron</div>
+      <div class="ingredient"><span class="icon">🟢</span>Lime</div>
+      <div class="ingredient"><span class="icon">🌿</span>Mynta</div>
+      <div class="ingredient"><span class="icon">🧊</span>Is</div>
+      <div class="ingredient"><span class="icon">🧂</span>Salt</div>
+      <div class="ingredient"><span class="icon">🥄</span>Socker</div>
+    </div></div>
+  </div>
+  <div class="hud">
+    <div class="badge" id="hudPlayer">Spelare</div>
+    <div class="badge" id="hudDrink">Ingen beställning ännu</div>
+  </div>
+  <div class="dialog" id="dialogBox">
+    <div class="dialog-name">Bartendern</div>
+    <div class="dialog-text" id="dialogText"></div>
+    <div id="dialogControls"></div>
+  </div>
+  <div id="portraitWarning">
+    <div class="warningCard">
+      <div class="big">↻</div>
+      <h2>Vrid telefonen vågrätt</h2>
+      <p>Barscenen spelas i landscape. Vrid mobilen 90° åt sidan – spelet fortsätter automatiskt.</p>
+      <div class="warningActions">
+        <button class="btn" id="tryLandscapeBtn">Försök växla automatiskt</button>
+        <button class="btn secondary" id="portraitFallbackBtn">Fortsätt i stående</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="actionScreen" class="screen">
+  <div id="rotateStage">
+    <div class="rotateIcon">📱↻</div>
+    <h2 class="actionTitle" id="rotateTitle">Vrid telefonen</h2>
+    <p class="actionHint" id="rotateHint">Det här momentet använder telefonen i stående läge.</p>
+    <button class="btn ghost" id="continuePortraitBtn">Jag är i stående läge</button>
+  </div>
+  <div id="shakeStage" style="display:none">
+    <h2 class="actionTitle">Skaka!</h2>
+    <p class="actionHint">Skaka telefonen som en riktig shaker.</p>
+    <div class="shaker"><div class="cap"></div><div class="cup"></div><div class="icebits">◆ ◇ ◆ ◇</div></div>
+    <div class="meter"><div class="meterFill" id="shakeFill"></div></div>
+    <p id="shakeStatus">0%</p>
+    <button class="btn ghost" id="shakeFallback">Tryck här för att simulera skakning</button>
+  </div>
+  <div id="drinkStage" style="display:none">
+    <h2 class="actionTitle">Smaka</h2>
+    <p class="actionHint">Telefonen är glaset. Lyft den mot munnen och luta den för att dricka.</p>
+    <div class="glassWrap"><div class="glass"><div class="liquid" id="liquid"></div><div class="ice">◇ ◇</div><div class="lime">◔</div></div></div>
+    <div class="meter"><div class="meterFill" id="drinkFill" style="width:0"></div></div>
+    <p id="drinkStatus">Glaset är fullt.</p>
+    <button class="btn ghost" id="drinkFallback">Tryck här för att simulera att du dricker</button>
+  </div>
+</section>
+
+<section id="resultScreen" class="screen center">
+  <div class="card" style="text-align:center">
+    <h2 id="resultTitle">Drink klar!</h2>
+    <div class="score" id="scoreValue">0</div>
+    <p id="resultLine"></p>
+    <div class="scoreGrid" id="scoreGrid"></div>
+    <div class="row" style="justify-content:center">
+      <button class="btn" id="anotherBtn">Beställ en till</button>
+      <button class="btn secondary" id="changeMoodBtn">Byt mood / bar</button>
+    </div>
+  </div>
+</section>
+
+<script src="bar_v1_1.js"></script>
+</body>
+</html>
