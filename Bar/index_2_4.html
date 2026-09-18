@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="sv">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<meta name="theme-color" content="#101014">
+<title>Bar Game – Version 2.4</title>
+<link rel="stylesheet" href="bar_v1_11.css">
+<style>
+/* Version 2.4: new tropical/Tiki background. Existing CSS and JS files remain untouched. */
+#barScene.tropical{
+  background-image:url("tiki_bar_background_master_locked.png");
+  background-size:cover;
+  background-position:center center;
+  background-repeat:no-repeat;
+}
+#barScene.tropical .ambient,
+#barScene.tropical .shelf,
+#barScene.tropical .bartender,
+#barScene.tropical .barcounter{
+  display:none;
+}
+
+/* Version 2.4: compact bottom dialogue with separate transcript */
+.dialog{bottom:0!important;left:0;right:0;transform:none;width:auto;min-height:0;padding:0;background:transparent;border:0;box-shadow:none}
+.dialogName{display:none!important}
+.dialogText{display:none;margin:0 154px 4px 6px;padding:7px 10px;min-height:0;font-size:clamp(14px,1.8vw,18px);line-height:1.22;background:#08090eea;border:1px solid #ffffff1d;border-radius:12px;white-space:pre-wrap}
+.dialog.live .dialogText,.dialog.typing .dialogText{display:block}
+#dialogTranscript{display:none;margin:0 154px 4px 6px;padding:7px 10px;font-size:clamp(14px,1.8vw,18px);line-height:1.22;background:#08090eea;border:1px solid #ffffff1d;border-radius:12px;white-space:pre-wrap}
+.dialog.transcript #dialogTranscript{display:block}
+#dialogControls{position:absolute;right:6px;bottom:4px;display:flex;gap:5px}
+#dialogControls .inputRow{display:flex;gap:5px;align-items:center}
+#dialogControls .inputRow input,#dialogControls .small{display:none!important}
+#dialogControls .inputRow .btn{padding:7px 9px;min-width:42px}
+#chatSendBtn{font-size:0}
+#chatSendBtn:after{content:"⌨️";font-size:20px}
+#chatMicBtn{font-size:18px}
+#printBtn{font-size:0}
+#printBtn:after{content:"📄";font-size:19px}
+.dialog.typing #dialogText{background:#171a22;outline:none}
+</style>
+</head>
+<body>
+<div id="toast"></div>
+<section id="startScreen" class="screen active center"><div class="card">
+<div class="version">VERSION 2.4</div><h1>BAR GAME</h1><p class="lead">Blanda, muddla, skaka och smaka. Telefonen blir en del av baren.</p>
+<label>Ditt namn</label><input id="nameInput" maxlength="24" autocomplete="name" placeholder="Till exempel Ulf">
+<label>Din ålder</label><input id="ageInput" type="number" inputmode="numeric" min="1" max="120" placeholder="18">
+<label>Svårighetsgrad</label><div class="difficultySelect">
+<button type="button" class="difficultyBtn selected" data-difficulty="easy">Lätt<small>3 alternativ</small></button>
+<button type="button" class="difficultyBtn" data-difficulty="medium">Medel<small>skriv eller prata</small></button>
+<button type="button" class="difficultyBtn" data-difficulty="hard">Svår<small>även mängder</small></button></div>
+<div id="difficultyHelp" class="diffHelp">Lätt: välj mellan tre alternativ eller säg svaret.</div><div id="startError" class="error"></div>
+<div class="row"><button id="enterBtn" class="btn">Gå in i baren</button><button id="sensorBtn" class="btn secondary">Tillåt sensorer</button></div>
+<p class="small">Under 18 används bara alkoholfria recept. På iPhone kan sensorer behöva godkännas manuellt.</p></div></section>
+<section id="moodScreen" class="screen center"><div class="card wide"><div class="bartenderFace">🙂</div><h2 id="moodHello">Välkommen!</h2><p id="moodPrompt">Vilket mood är du på idag?</p><div class="moods">
+<button class="mood" data-mood="party"><b>🎉 Festligt och färgglatt</b><span>Puls, city lights och show.</span></button>
+<button class="mood" data-mood="tropical"><b>🌴 Tropiskt och avslappnat</b><span>Bambu, palmer och semester.</span></button>
+<button class="mood" data-mood="classic"><b>🥃 Lugnt och klassiskt</b><span>Mörkt trä och Manhattan-känsla.</span></button>
+<button class="mood" data-mood="elegant"><b>🍸 Elegant och exklusivt</b><span>Varm hotellbar och finare servering.</span></button>
+<button class="mood" data-mood="surprise"><b>🎲 Överraska mig</b><span>Bartendern väljer.</span></button></div></div></section>
+<section id="barScreen" class="screen"><div id="barScene" class="tropical"><div class="ambient"></div><div class="shelf"><div class="bottles" id="bottles"></div></div><div class="bartender"><div class="head"><i class="eye left"></i><i class="eye right"></i><i class="mouth"></i></div><div class="body"><div class="apron"></div></div></div><div class="barcounter"><div class="counterItems"><div>🍋<small>Citron</small></div><div>🟢<small>Lime</small></div><div>🌿<small>Mynta</small></div><div>🧊<small>Is</small></div><div>🧂<small>Salt</small></div><div>🥄<small>Socker</small></div></div></div></div>
+<div id="orientationBanner" class="orientationBanner">↻ Vrid telefonen vågrätt för bästa barscen.<button id="tryLandscapeBtn">Försök automatiskt</button></div>
+<div class="hud"><div class="badge" id="hudPlayer">Spelare</div><div class="badge" id="hudDrink">Ingen beställning ännu</div></div><div class="dialog"><div class="dialogName">Bartendern</div><div id="dialogText" class="dialogText"></div><div id="dialogControls"></div></div></section>
+<section id="actionScreen" class="screen action"><div id="rotateStage" class="actionPanel"><div class="phoneIcon">📱↻</div><h2 id="rotateTitle">Vrid telefonen till stående</h2><p id="rotateHint">Telefonen blir redskapet i nästa moment.</p><button id="startPortraitBtn" class="btn">Starta stående moment</button><p class="small">Om mobilen inte roterar automatiskt: vrid den själv.</p></div>
+<div id="muddleStage" class="actionPanel hidden"><h2>Muddla myntan</h2><p>Tryck och gnugga myntan och limen med fingret – försiktigt, inte till mos.</p><div id="muddleGlass" class="muddleGlass"><span class="leaf l1">🌿</span><span class="leaf l2">🌿</span><span class="leaf l3">🌿</span><span class="limeSlice a">🟢</span><span class="limeSlice b">🟢</span><div class="muddler"></div></div><div class="meter"><div id="muddleFill" class="meterFill"></div></div><p id="muddleStatus">0%</p><button id="muddleFallback" class="btn secondary">Simulera muddling</button></div>
+<div id="shakeStage" class="actionPanel hidden"><h2>Skaka!</h2><p>Håll telefonen stadigt och skaka som en riktig shaker.</p><div class="shaker"><div class="cap"></div><div class="cup"></div><div class="icebits">◆ ◇ ◆ ◇</div></div><div class="meter"><div id="shakeFill" class="meterFill"></div></div><p id="shakeStatus">0%</p><button id="shakeFallback" class="btn secondary">Simulera skakning</button></div>
+<div id="drinkStage" class="actionPanel hidden"><h2>Smaka</h2><p>Telefonen är glaset. För den mot munnen och luta den.</p><div class="glass"><div id="liquid" class="liquid"></div><div class="glassIce">◇ ◇</div><div class="glassLime">◔</div></div><div class="meter"><div id="drinkFill" class="meterFill"></div></div><p id="drinkStatus">Glaset är fullt.</p><button id="drinkFallback" class="btn secondary">Simulera att du dricker</button></div>
+<div id="returnStage" class="actionPanel hidden"><div class="phoneIcon">📱↻</div><h2>Klart!</h2><p id="returnText">Vrid tillbaka till liggande läge. Spelet fortsätter automatiskt när landscape upptäcks.</p><button id="returnBarBtn" class="btn">Tillbaka till baren</button></div></section>
+<section id="resultScreen" class="screen center"><div class="card resultCard"><h2 id="resultTitle">Drink klar!</h2><div id="scoreValue" class="score">0</div><p id="resultLine"></p><div id="scoreGrid" class="scoreGrid"></div><div class="row centerRow"><button id="anotherBtn" class="btn">En till</button><button id="changeMoodBtn" class="btn secondary">Byt mood / bar</button></div></div></section>
+<script src="bar_v1_11_1.js"></script>
+<script src="bar_v1_11_2.js"></script>
+<script src="bar_v1_11_3.js"></script>
+<script src="bar_v1_11_logic.js"></script>
+
+<script>
+/* 2.4 separated live dialogue, history and transcript. Legacy JS remains unchanged. */
+(function(){
+ const q=s=>document.querySelector(s), history=[];
+ let typing=false, transcript=false, internal=false, lastCaptured='';
+ function playerName(){try{return (typeof state!=='undefined'&&state&&state.name)||'Spelare'}catch(e){return 'Spelare'}}
+ function ensureTranscript(){
+   let t=q('#dialogTranscript'); if(t)return t;
+   const live=q('#dialogText'); if(!live)return null;
+   t=document.createElement('div');t.id='dialogTranscript';live.insertAdjacentElement('afterend',t);return t;
+ }
+ function add(who,msg){
+   msg=String(msg||'').trim();if(!msg)return;
+   const line=who+': '+msg;
+   if(history[history.length-1]!==line)history.push(line);
+   if(history.length>20)history.shift();
+   drawTranscript();
+ }
+ function drawTranscript(){
+   const t=ensureTranscript();if(t)t.textContent=history.slice(-2).join('\n');
+ }
+ function showLive(){
+   const d=q('.dialog');if(!d||typing||transcript)return;
+   d.classList.add('live');d.classList.remove('transcript');
+ }
+ function captureBartender(){
+   if(internal||typing)return;
+   const el=q('#dialogText');if(!el||el.isContentEditable)return;
+   let raw=(el.textContent||'').trim();if(!raw)return;
+   raw=raw.replace(/^Bartender:\s*/,'');
+   if(!raw||raw===lastCaptured)return;
+   lastCaptured=raw;add('Bartender',raw);
+   internal=true;el.textContent='Bartender: '+raw;internal=false;
+   showLive();
+ }
+ function installControls(){
+   const c=q('#dialogControls'),d=q('.dialog'),el=q('#dialogText');if(!c||!d||!el)return;
+   const row=c.querySelector('.inputRow');if(!row)return;
+   const send=q('#chatSendBtn'),mic=q('#chatMicBtn');if(!send||!mic)return;
+
+   if(!send.dataset.v24){
+     send.dataset.v24='1';send.title='Tangentbord';
+     send.onclick=function(){
+       try{if(typeof stopIdle==='function')stopIdle();if(typeof stopSpeech==='function')stopSpeech()}catch(e){}
+       typing=true;transcript=false;d.classList.add('typing','live');d.classList.remove('transcript');
+       const n=playerName();internal=true;el.textContent=n+': ';internal=false;
+       el.contentEditable='true';el.spellcheck=true;
+       c.querySelectorAll('button').forEach(b=>b.style.display='none');el.focus();
+       const r=document.createRange(),s=window.getSelection();r.selectNodeContents(el);r.collapse(false);s.removeAllRanges();s.addRange(r);
+       el.onkeydown=function(e){
+         if(e.key!=='Enter')return;e.preventDefault();
+         let raw=el.textContent||'',p=n+':';raw=raw.startsWith(p)?raw.slice(p.length).trim():raw.trim();
+         el.contentEditable='false';el.onkeydown=null;typing=false;d.classList.remove('typing');
+         c.querySelectorAll('button').forEach(b=>b.style.display='');
+         add(n,raw);
+         if(raw&&typeof handleConversation==='function')handleConversation(raw);
+         else if(typeof renderConversationInput==='function')renderConversationInput();
+       };
+     };
+   }
+
+   if(!mic.dataset.v24){
+     mic.dataset.v24='1';mic.title='Mikrofon';
+     mic.onclick=function(){
+       try{if(typeof stopIdle==='function')stopIdle();if(typeof stopSpeech==='function')stopSpeech()}catch(e){}
+       if(typeof recognize==='function')recognize(alts=>{
+         const raw=(alts[0]||'').trim();if(!raw)return;
+         add(playerName(),raw);
+         if(typeof handleConversation==='function')handleConversation(raw);
+       },mic);
+     };
+   }
+
+   let pb=q('#printBtn');
+   if(!pb){
+     pb=document.createElement('button');pb.id='printBtn';pb.className='btn secondary';pb.title='Utskrift';pb.textContent='Utskrift';
+     row.insertBefore(pb,send);
+   } else if(pb.nextSibling!==send) row.insertBefore(pb,send);
+   if(!pb.dataset.v24){
+     pb.dataset.v24='1';
+     pb.onclick=function(){
+       transcript=!transcript;
+       if(transcript){d.classList.add('transcript');d.classList.remove('live');drawTranscript()}
+       else{d.classList.remove('transcript','live')}
+     };
+   }
+ }
+ function init(){
+   ensureTranscript();
+   const live=q('#dialogText'),d=q('.dialog');if(!live||!d)return;
+   const obs=new MutationObserver(()=>{try{captureBartender();installControls()}catch(e){}});
+   obs.observe(live,{childList:true,subtree:true,characterData:true});
+   const ctrlObs=new MutationObserver(()=>{try{installControls()}catch(e){}});
+   const c=q('#dialogControls');if(c)ctrlObs.observe(c,{childList:true,subtree:true});
+   installControls();captureBartender();
+ }
+ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
+})();
+</script>
+</body></html>
