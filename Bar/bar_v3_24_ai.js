@@ -237,8 +237,11 @@ advanceStep=function(s,prefix=''){
 orderDrink=function(d){
   stopIdle();state.recipeSessionV119++;state.recipeRequestSeqV119=0;state.recipeHelpV119=false;
   state.phase='recipe';state.drink=d;state.step=0;state.correct=0;state.wrong=0;state.points=0;state.startedAt=Date.now();state.serving=null;state.questionFails=0;state.amountFails=0;state.lastRecipeQuestion='';state.aiCorrectParts=[];updateHud();$('#dialogControls').innerHTML='';
-  const intro=pick([`${d.intro} Bra val. Du får hjälpa mig bakom baren.`,`${d.intro} Då kör vi. Du får jobba lite också.`,`${d.intro} Snyggt val. Kom, så bygger vi den tillsammans.`]);
-  $('#dialogText').textContent=intro;speak(intro,()=>{if(state.phase!=='recipe'||state.drink!==d)return;if(state.difficulty==='hard')askServing();else renderStep(true)})
+  const instruction='Spelaren har beställt '+d.name+'. Bekräfta beställningen naturligt och kort. Berätta att spelaren ska hjälpa till bakom baren. Formulera repliken själv och använd ingen lagrad standardfras.';
+  setAiBusyV119(true);streamDialogV119('');const voice=createStreamingSpeechV119();
+  callAiStreamV119(instruction,{phase:'recipe',currentQuestion:null,expectedAnswer:null,answerMode:null,answerParts:[],alreadyCorrectParts:[],stepToken:recipeTokenV119('recipe')},(full,delta)=>{streamDialogV119(full);voice.push(delta)})
+   .then(async data=>{voice.finish();setAiBusyV119(false);await voice.done;if(state.phase!=='recipe'||state.drink!==d)return;if(state.difficulty==='hard')askServing();else renderStep(true)})
+   .catch(e=>{voice.cancel();setAiBusyV119(false);console.error('Order intro',e);if(state.phase==='recipe'&&state.drink===d)renderStep(true)})
 };
 
 handleConversation=async function(raw){
