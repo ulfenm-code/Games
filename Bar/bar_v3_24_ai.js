@@ -198,8 +198,7 @@ registerWrongAnswer=function(s,preserveDialog=false){
   state.wrong++;state.points=Math.max(0,state.points-2);state.questionFails++;state.recipeHelpV119=false;
   renderRecipeControlsV119();
   if(!preserveDialog){
-    const msg=state.questionFails>=3?'Inte riktigt. Nu får du tre alternativ.':pick(['Inte riktigt. Försök en gång till.','Nja, inte den. Ta ett nytt försök.','Nästan kanske, men inte rätt. Försök igen.']);
-    $('#dialogText').textContent=msg;speak(msg)
+    $('#dialogText').textContent=''
   }
 };
 
@@ -214,8 +213,7 @@ completeRecipeStep=function(s,withPraise=false){
   if(!sameStepObjectV119(s))return;
   state.correct++;state.points+=10;state.aiCorrectParts=[];state.recipeHelpV119=false;
   if(state.difficulty==='hard'&&s.amount){askAmount(s);return}
-  const prefix=withPraise?pick(['Precis.','Rätt, där satt den.','Snyggt.']):'';
-  advanceStep(s,prefix)
+  advanceStep(s,'')
 };
 
 advanceStep=function(s,prefix=''){
