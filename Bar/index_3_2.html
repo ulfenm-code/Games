@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="sv">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<meta name="theme-color" content="#101014">
+<title>Bar Game – Version 3.2</title>
+<link rel="stylesheet" href="bar_v3_2.css">
+</head>
+<body>
+<div id="toast"></div>
+<section id="startScreen" class="screen active center"><div class="card">
+<div class="version">VERSION 3.2 · EN RECEPTKONTROLLER</div><h1>BAR GAME</h1><p class="lead">Blanda, muddla, skaka och smaka. Telefonen blir en del av baren.</p>
+<label>Ditt namn</label><input id="nameInput" maxlength="24" autocomplete="name" placeholder="Till exempel Ulf">
+<label>Din ålder</label><input id="ageInput" type="number" inputmode="numeric" min="1" max="120" placeholder="18">
+<label>Svårighetsgrad</label><div class="difficultySelect">
+<button type="button" class="difficultyBtn selected" data-difficulty="easy">Lätt<small>3 alternativ</small></button>
+<button type="button" class="difficultyBtn" data-difficulty="medium">Medel<small>skriv eller prata</small></button>
+<button type="button" class="difficultyBtn" data-difficulty="hard">Svår<small>även mängder</small></button></div>
+<div id="difficultyHelp" class="diffHelp">Lätt: välj mellan tre alternativ eller säg svaret.</div><div id="startError" class="error"></div>
+<div class="row"><button id="enterBtn" class="btn">Gå in i baren</button><button id="sensorBtn" class="btn secondary">Tillåt sensorer</button></div>
+<p class="small">Under 18 används bara alkoholfria recept. På iPhone kan sensorer behöva godkännas manuellt.</p></div></section>
+<section id="moodScreen" class="screen center"><div class="card wide"><div class="bartenderFace">🙂</div><h2 id="moodHello">Välkommen!</h2><p id="moodPrompt">Vilket mood är du på idag?</p><div class="moods">
+<button class="mood" data-mood="party"><b>🎉 Festligt och färgglatt</b><span>Puls, city lights och show.</span></button>
+<button class="mood" data-mood="tropical"><b>🌴 Tropiskt och avslappnat</b><span>Bambu, palmer och semester.</span></button>
+<button class="mood" data-mood="classic"><b>🥃 Lugnt och klassiskt</b><span>Mörkt trä och Manhattan-känsla.</span></button>
+<button class="mood" data-mood="elegant"><b>🍸 Elegant och exklusivt</b><span>Varm hotellbar och finare servering.</span></button>
+<button class="mood" data-mood="surprise"><b>🎲 Överraska mig</b><span>Bartendern väljer.</span></button></div></div></section>
+<section id="barScreen" class="screen"><div id="barScene" class="tropical"><div class="ambient"></div><div class="shelf"><div class="bottles" id="bottles"></div></div><div class="bartender"><div class="head"><i class="eye left"></i><i class="eye right"></i><i class="mouth"></i></div><div class="body"><div class="apron"></div></div></div><div class="barcounter"><div class="counterItems"><div>🍋<small>Citron</small></div><div>🟢<small>Lime</small></div><div>🌿<small>Mynta</small></div><div>🧊<small>Is</small></div><div>🧂<small>Salt</small></div><div>🥄<small>Socker</small></div></div></div></div>
+<div id="orientationBanner" class="orientationBanner">↻ Vrid telefonen vågrätt för bästa barscen.<button id="tryLandscapeBtn">Försök automatiskt</button></div>
+<div class="hud"><div class="badge" id="hudPlayer">Spelare</div><div class="badge" id="hudDrink">Ingen beställning ännu</div></div><div class="dialog"><div class="dialogName">Bartendern · AI</div><div id="dialogText" class="dialogText"></div><div id="dialogControls"></div></div></section>
+<section id="actionScreen" class="screen action"><div id="rotateStage" class="actionPanel"><div class="phoneIcon">📱↻</div><h2 id="rotateTitle">Vrid telefonen till stående</h2><p id="rotateHint">Telefonen blir redskapet i nästa moment.</p><button id="startPortraitBtn" class="btn">Starta stående moment</button><p class="small">Om mobilen inte roterar automatiskt: vrid den själv.</p></div>
+<div id="muddleStage" class="actionPanel hidden"><h2>Muddla myntan</h2><p>Tryck och gnugga myntan och limen med fingret – försiktigt, inte till mos.</p><div id="muddleGlass" class="muddleGlass"><span class="leaf l1">🌿</span><span class="leaf l2">🌿</span><span class="leaf l3">🌿</span><span class="limeSlice a">🟢</span><span class="limeSlice b">🟢</span><div class="muddler"></div></div><div class="meter"><div id="muddleFill" class="meterFill"></div></div><p id="muddleStatus">0%</p><button id="muddleFallback" class="btn secondary">Simulera muddling</button></div>
+<div id="shakeStage" class="actionPanel hidden"><h2>Skaka!</h2><p>Håll telefonen stadigt och skaka som en riktig shaker.</p><div class="shaker"><div class="cap"></div><div class="cup"></div><div class="icebits">◆ ◇ ◆ ◇</div></div><div class="meter"><div id="shakeFill" class="meterFill"></div></div><p id="shakeStatus">0%</p><button id="shakeFallback" class="btn secondary">Simulera skakning</button></div>
+<div id="drinkStage" class="actionPanel hidden"><h2>Smaka</h2><p>Telefonen är glaset. För den mot munnen och luta den.</p><div class="glass"><div id="liquid" class="liquid"></div><div class="glassIce">◇ ◇</div><div class="glassLime">◔</div></div><div class="meter"><div id="drinkFill" class="meterFill"></div></div><p id="drinkStatus">Glaset är fullt.</p><button id="drinkFallback" class="btn secondary">Simulera att du dricker</button></div>
+<div id="returnStage" class="actionPanel hidden"><div class="phoneIcon">📱↻</div><h2>Klart!</h2><p id="returnText">Vrid tillbaka till liggande läge. Spelet fortsätter automatiskt när landscape upptäcks.</p><button id="returnBarBtn" class="btn">Tillbaka till baren</button></div></section>
+<section id="resultScreen" class="screen center"><div class="card resultCard"><h2 id="resultTitle">Drink klar!</h2><div id="scoreValue" class="score">0</div><p id="resultLine"></p><div id="scoreGrid" class="scoreGrid"></div><div class="row centerRow"><button id="anotherBtn" class="btn">En till</button><button id="changeMoodBtn" class="btn secondary">Byt mood / bar</button></div></div></section>
+<script src="bar_v3_2_core.js"></script>
+<script src="bar_v3_2_actions.js"></script>
+<script src="bar_v3_2_ai.js"></script><script src="bar_v3_2_ui.js"></script>
+</body></html>
