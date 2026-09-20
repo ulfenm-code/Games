@@ -1,0 +1,170 @@
+:root{--bg:#0a0b10;--panel:rgba(9,10,15,.92);--text:#f6f4ee;--muted:#c9c6bf;--accent:#f4be55;--good:#75d49a;--bad:#ff7c7c;--barTop:67vh}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif}button,input{font:inherit}button{cursor:pointer}.screen{position:fixed;inset:0;display:none}.screen.active{display:flex}.center{align-items:center;justify-content:center}.card{width:min(92vw,580px);padding:24px;border-radius:24px;background:rgba(13,14,20,.94);box-shadow:0 20px 80px #0008}.card.wide{width:min(94vw,740px)}.version{font-size:11px;letter-spacing:.12em;color:var(--accent);font-weight:800}h1{font-size:clamp(36px,9vw,62px);line-height:.95;margin:8px 0 12px}h2{margin:0 0 10px}p{margin-top:0}.lead,.small{color:var(--muted)}.small{font-size:12px}label{display:block;margin:14px 0 6px}input{width:100%;border:1px solid #ffffff20;background:#191b24;color:#fff;padding:13px 14px;border-radius:13px;outline:none}input:focus{border-color:var(--accent)}.row{display:flex;gap:9px;flex-wrap:wrap;margin-top:14px}.btn{border:0;border-radius:14px;background:var(--accent);color:#171209;font-weight:800;padding:12px 16px}.btn.secondary{background:#292c37;color:#fff}.btn:disabled{opacity:.5}.error{color:#ffaaaa;min-height:1.4em;margin-top:7px}
+.difficultySelect{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:8px 0 4px}.difficultyBtn{padding:11px 8px;border-radius:13px;border:1px solid #ffffff1f;background:#242630;color:#fff;font-weight:800}.difficultyBtn small{display:block;font-weight:400;color:#c7c5c8;margin-top:3px}.difficultyBtn.selected{outline:2px solid var(--accent);background:#35313a}.diffHelp{font-size:12px;color:#c7c5c8;min-height:32px;margin:5px 0 12px}
+.bartenderFace{font-size:64px;text-align:center;margin-bottom:8px}.moods{display:grid;grid-template-columns:1fr 1fr;gap:10px}.mood{border:1px solid #ffffff1d;background:#ffffff0c;color:#fff;padding:14px;border-radius:15px;text-align:left}.mood b,.mood span{display:block}.mood span{font-size:12px;color:#c8c6cc;margin-top:3px}.mood:last-child{grid-column:1/-1}
+#barScreen.active{display:block;background:#171820}#barScene{position:absolute;inset:0}#barScene.tropical{background:linear-gradient(#61bdd0 0 24%,#eddca5 24% 28%,#7c512c 28%)}#barScene.manhattan{background:#101116}#barScene.rooftop{background:linear-gradient(#212755 0 53%,#161621 53%)}#barScene.hotel{background:#432d25}.ambient{position:absolute;inset:0;overflow:hidden}.tropical .ambient:before{content:"";position:absolute;width:min(30vw,250px);aspect-ratio:1;border-radius:50%;background:#ffd669;right:6vw;top:4vh;box-shadow:0 0 50px #ffd66977}.tropical .ambient:after{content:"🌴        🌴";position:absolute;left:3vw;bottom:24vh;font-size:min(14vw,120px)}.manhattan .ambient:before{content:"";position:absolute;inset:5vh 4vw 34vh;border:7px solid #342a20;background:repeating-linear-gradient(90deg,#101424 0 8%,#f2b84f 8% 8.8%,#101424 8.8% 16%)}.rooftop .ambient:before{content:"";position:absolute;left:0;right:0;bottom:31vh;height:26vh;background:repeating-linear-gradient(90deg,#0d1020 0 7%,#f5bc55 7% 7.7%,#0d1020 7.7% 13%);clip-path:polygon(0 30%,7% 30%,7% 0,15% 0,15% 40%,24% 40%,24% 16%,35% 16%,35% 46%,46% 46%,46% 23%,58% 23%,58% 10%,70% 10%,70% 37%,81% 37%,81% 20%,91% 20%,91% 5%,100% 5%,100% 100%,0 100%)}.hotel .ambient:before{content:"";position:absolute;inset:0;background:radial-gradient(circle at 22% 18%,#ffd27533,transparent 23%),radial-gradient(circle at 78% 18%,#ffd27533,transparent 23%)}
+.shelf{position:absolute;left:7vw;right:7vw;top:17vh;height:25vh;border:5px solid #301c0d;border-radius:8px;background:linear-gradient(#533119,#28170d);box-shadow:0 12px 30px #0007}.manhattan .shelf{background:#211711;border-color:#6b5038}.rooftop .shelf{background:#20232b;border-color:#555966}.hotel .shelf{background:#5c3724;border-color:#a47851}.shelf:after{content:"";position:absolute;left:2%;right:2%;top:49%;height:6px;background:#ffffff2a}.bottles{position:absolute;inset:5% 2% 6%;display:grid;grid-template-columns:repeat(10,1fr);gap:clamp(3px,1vw,13px);align-items:end}.bottle{height:44%;border-radius:6px;position:relative;border:1px solid #ffffff24}.bottle:nth-child(n+6){align-self:start;margin-top:4%}.bottle:before{content:"";position:absolute;width:34%;height:22%;top:-19%;left:33%;background:inherit;border-radius:3px 3px 0 0}.bottle:after{content:attr(data-label);position:absolute;left:7%;right:7%;top:39%;padding:2px 0;background:#e8dfce;color:#211a13;text-align:center;font-size:7px;overflow:hidden}
+.bartender{position:absolute;z-index:3;left:50%;transform:translateX(-50%);bottom:31vh;width:clamp(110px,15vw,180px);height:clamp(180px,31vh,300px)}.head{position:absolute;left:50%;transform:translateX(-50%);top:0;width:48%;aspect-ratio:1;border-radius:48%;background:#c98865;border:3px solid #0003}.eye{position:absolute;top:44%;width:7%;height:5%;background:#211814;border-radius:50%}.eye.left{left:27%}.eye.right{right:27%}.mouth{position:absolute;left:35%;top:68%;width:30%;height:10%;border-bottom:3px solid #71342e;border-radius:50%}.body{position:absolute;left:10%;right:10%;bottom:0;height:69%;background:#171922;clip-path:polygon(18% 0,82% 0,100% 100%,0 100%)}.apron{position:absolute;left:24%;right:24%;top:14%;bottom:0;background:#f0eee7;clip-path:polygon(18% 0,82% 0,100% 100%,0 100%)}
+.barcounter{position:absolute;left:0;right:0;top:var(--barTop);bottom:0;z-index:5;background:linear-gradient(#865226 0 7%,#3e2413 7%);border-top:7px solid #a97037}.manhattan .barcounter{background:linear-gradient(#6b5140 0 7%,#241916 7%);border-top-color:#a1846c}.rooftop .barcounter{background:linear-gradient(#464955 0 7%,#1c1d23 7%);border-top-color:#7c808c}.hotel .barcounter{background:linear-gradient(#90613f 0 7%,#4b2c20 7%);border-top-color:#c28d62}.counterItems{position:absolute;left:4vw;right:4vw;top:4vh;display:flex;gap:2.4vw;align-items:flex-start}.counterItems>div{font-size:31px;text-align:center}.counterItems small{display:block;font-size:10px;color:#ddd}.hud{position:absolute;z-index:20;top:2vh;left:2vw;right:2vw;display:flex;justify-content:space-between;gap:10px;pointer-events:none}.badge{background:#090a0fbb;border:1px solid #ffffff1d;padding:8px 11px;border-radius:12px;font-size:12px}.dialog{position:absolute;z-index:30;left:50%;transform:translateX(-50%);bottom:2.5vh;width:min(94vw,900px);background:#08090eea;border:1px solid #ffffff1d;border-radius:18px;padding:14px;box-shadow:0 10px 40px #0008}.dialogName{font-size:11px;color:var(--accent);font-weight:900;letter-spacing:.1em;text-transform:uppercase}.dialogText{font-size:clamp(15px,2vw,20px);margin:5px 0 11px;min-height:1.4em}.inputRow,.freeAnswerRow{display:flex;gap:7px;align-items:center;flex-wrap:wrap}.inputRow input,.freeAnswerRow input{padding:10px 11px;flex:1;min-width:180px}.inputRow .btn,.freeAnswerRow .btn{padding:10px 12px}.freeAnswerStatus{width:100%;font-size:12px;color:#c7c5c8}.recipeTalkNote{width:100%;font-size:11px;color:#aaa7ae;margin-top:2px}.choices{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.choice{border:1px solid #ffffff18;background:#262935;color:#fff;padding:10px;border-radius:11px;font-weight:700}.choice.good{outline:2px solid var(--good)}.choice.bad{outline:2px solid var(--bad)}.hintTitle{font-size:12px;color:var(--accent);font-weight:800;margin:8px 0}.orientationBanner{display:none;position:absolute;z-index:60;top:8px;left:50%;transform:translateX(-50%);background:#11131aee;border:1px solid #ffffff25;border-radius:13px;padding:8px 10px;font-size:12px;align-items:center;gap:8px;max-width:95vw}.orientationBanner button{border:0;border-radius:9px;padding:6px 8px;background:var(--accent);font-weight:800}
+.action{align-items:center;justify-content:center;text-align:center;padding:18px;background:radial-gradient(circle at 50% 25%,#30343f,#0f1015 72%)}.actionPanel{width:min(94vw,600px)}.hidden{display:none!important}.phoneIcon{font-size:78px;animation:rock 1.2s ease-in-out infinite}@keyframes rock{0%,100%{transform:rotate(-13deg)}50%{transform:rotate(13deg)}}.meter{width:min(82vw,520px);height:20px;margin:16px auto;border:1px solid #ffffff20;border-radius:999px;overflow:hidden;background:#252833}.meterFill{width:0;height:100%;background:linear-gradient(90deg,#d99f3d,#fff0a4);transition:width .08s}.shaker{position:relative;width:min(35vw,180px);height:min(54vh,390px);margin:8px auto}.shaker .cap{position:absolute;left:22%;right:22%;top:0;height:12%;background:linear-gradient(90deg,#747980,#f3f4f4,#73787e);clip-path:polygon(16% 0,84% 0,100% 100%,0 100%)}.shaker .cup{position:absolute;left:8%;right:8%;top:11%;bottom:0;background:linear-gradient(90deg,#676d73,#f7f8f8 48%,#747a80);clip-path:polygon(8% 0,92% 0,75% 100%,25% 100%)}.icebits{position:absolute;inset:19% 20%;font-size:22px;color:#bfeaff;animation:ice .18s alternate infinite}@keyframes ice{to{transform:translate(6px,5px) rotate(2deg)}}.muddleGlass{position:relative;width:min(62vw,290px);height:min(52vh,390px);margin:10px auto;border:8px solid #ffffff99;border-top:2px solid #ffffff55;border-radius:8px 8px 42px 42px;background:linear-gradient(#ffffff09,#b6e9ff12);overflow:hidden;touch-action:none}.leaf,.limeSlice{position:absolute;font-size:42px;user-select:none;pointer-events:none}.l1{left:20%;bottom:18%}.l2{right:18%;bottom:25%;transform:rotate(25deg)}.l3{left:43%;bottom:11%;transform:rotate(-20deg)}.limeSlice.a{left:13%;bottom:5%}.limeSlice.b{right:14%;bottom:7%}.muddler{position:absolute;width:24px;height:76%;left:52%;top:-7%;background:linear-gradient(90deg,#7d5129,#c08b4d,#6d4423);border-radius:12px;transform:rotate(8deg);transform-origin:50% 85%;transition:transform .08s}.muddleGlass.hit .muddler{transform:translateY(18px) rotate(-4deg)}.muddleGlass.hit .leaf{filter:saturate(1.5);transform:scale(.88)}.glass{position:relative;width:min(55vw,260px);height:min(55vh,390px);margin:8px auto;border:8px solid #ffffff99;border-top:2px solid #ffffff55;border-radius:8px 8px 40px 40px;overflow:hidden}.liquid{position:absolute;left:0;right:0;bottom:0;height:78%;background:linear-gradient(#8bdc92bb,#60b876dd);transition:height .1s}.glassIce{position:absolute;left:0;right:0;top:30%;font-size:32px;color:#dff7ff}.glassLime{position:absolute;right:7%;top:14%;font-size:42px}.hardPromptOverlay{position:fixed;z-index:1000;inset:0;background:#0009;display:flex;align-items:center;justify-content:center;padding:18px}.hardPromptCard{width:min(92vw,480px);background:#15161d;border:1px solid #ffffff29;border-radius:20px;padding:20px;box-shadow:0 20px 70px #0009}.hardPromptCard h3{margin:0 0 8px;color:var(--accent)}.hardPromptRow{display:flex;gap:8px;flex-wrap:wrap}.hardPromptRow input{flex:1;min-width:160px}.hardPromptStatus{font-size:12px;color:#c7c5c8;margin-top:9px;min-height:18px}.amountHints{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-top:10px}.resultCard{text-align:center}.score{font-size:70px;font-weight:900;color:var(--accent)}.scoreGrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:14px 0}.scoreGrid div{background:#ffffff0b;padding:10px;border-radius:12px}.centerRow{justify-content:center}#toast{position:fixed;z-index:2000;left:50%;top:18px;transform:translate(-50%,-120%);background:#11131a;color:#fff;padding:10px 15px;border-radius:12px;border:1px solid #ffffff22;transition:.25s}#toast.show{transform:translate(-50%,0)}
+@media (orientation:portrait){#barScreen.active .orientationBanner{display:flex}#barScreen.active .shelf{top:13vh;height:27vh;left:5vw;right:5vw}#barScreen.active .bartender{bottom:33vh;height:29vh}#barScreen.active .barcounter{top:66vh}#barScreen.active .dialog{bottom:2vh}}@media(max-width:430px){.difficultySelect{grid-template-columns:1fr}.difficultyBtn small{display:inline;margin-left:5px}.hardPromptRow{flex-direction:column}}@media (max-height:520px) and (orientation:landscape){.dialog{bottom:1.2vh;padding:10px}.dialogText{margin-bottom:8px}.counterItems{top:2.5vh}.barcounter{top:65vh}}
+
+/* Bar Game 3.37 UI */
+#barScene.tropical{background-image:url("./tiki_bar_background_v2.png");background-size:cover;background-position:center;background-repeat:no-repeat}
+#barScene.tropical .ambient,#barScene.tropical .shelf,#barScene.tropical .bartender,#barScene.tropical .barcounter{display:none}
+.dialog{bottom:0!important;left:0;right:0;transform:none;width:auto;min-height:0;padding:0;background:transparent;border:0;box-shadow:none}
+.dialogName{display:none!important}
+.dialogText{display:none;margin:0 154px 4px 6px;padding:7px 10px;min-height:0;font-size:clamp(14px,1.8vw,18px);line-height:1.22;background:#08090eea;border:1px solid #ffffff1d;border-radius:12px;white-space:pre-wrap}
+.dialog.typing .dialogText{display:block;background:#171a22;outline:none}
+#dialogTranscript{display:none;margin:0 154px 4px 6px;padding:7px 10px;font-size:clamp(14px,1.8vw,18px);line-height:1.22;background:#08090eea;border:1px solid #ffffff1d;border-radius:12px;white-space:pre-wrap}
+.dialog.transcript #dialogTranscript{display:block}
+#dialogControls{position:absolute;right:6px;bottom:4px;display:flex;gap:5px}
+#dialogControls .inputRow{display:flex;gap:5px;align-items:center}
+#dialogControls .inputRow input,#dialogControls .small{display:none!important}
+#dialogControls .inputRow .btn{padding:7px 9px;min-width:42px}
+#chatSendBtn{font-size:0}#chatSendBtn:after{content:"⌨️";font-size:20px}
+#chatMicBtn{font-size:18px}
+#printBtn{font-size:0}#printBtn:after{content:"📄";font-size:19px}
+
+/* Unified 3.1 controls: legacy recipe/special input chrome never appears. */
+#dialogControls .freeAnswerRow{display:none!important}
+#dialogControls .recipeTalkNote,#dialogControls .freeAnswerStatus{display:none!important}
+#dialogControls .v31Controls{display:flex;gap:5px;align-items:center}
+#dialogControls .v31Controls .btn{padding:7px 9px;min-width:42px}
+#v31KeyboardBtn,#v31PrintBtn{font-size:0}
+#v31KeyboardBtn:after{content:"⌨️";font-size:20px}
+#v31PrintBtn:after{content:"📄";font-size:19px}
+#v31MicBtn{font-size:18px}
+
+/* 3.2: only the unified control row may be visible. Legacy chat/recipe buttons stay functional for legacy code but hidden. */
+#dialogControls>.inputRow,#dialogControls>.freeAnswerRow{display:none!important}
+#dialogControls #chatSendBtn,#dialogControls #chatMicBtn,#dialogControls #recipeSend,#dialogControls #recipeMic{display:none!important}
+#dialogControls .v31Controls{display:flex!important}
+
+/* 3.3 fixed 16:9 bar world: show the entire locked background, never crop it. */
+#barScreen.active{display:block;background:#090a0d}
+#barScene{
+  position:absolute;
+  left:50%;
+  top:50%;
+  right:auto;
+  bottom:auto;
+  width:min(100vw,177.7777778vh);
+  height:min(56.25vw,100vh);
+  transform:translate(-50%,-50%);
+  overflow:hidden;
+}
+#barScene.tropical{
+  background-image:url("./tiki_bar_background_v2.png");
+  background-size:100% 100%;
+  background-position:center;
+  background-repeat:no-repeat;
+}
+
+/* 3.4 rigged bartender — exact neutral pose from bartender_installningar (2).json.
+   Internal rig coordinate system is 520x450. The whole rig is placed/scaled as one unit in the 16:9 scene. */
+#bartenderRig{position:absolute;z-index:12;left:50%;top:7.5%;width:520px;height:450px;transform-origin:50% 0;transform:translateX(-50%) scale(.5306573613560637);pointer-events:none}
+#bartenderRig .bartenderPart{position:absolute;height:auto;max-width:none;transform-origin:var(--px) var(--py);transform:rotate(var(--r));z-index:var(--z)}
+#bartenderRig .torso{left:130px;top:95px;width:264px;--r:0deg;--px:50%;--py:50%;--z:0}
+#bartenderRig .headSprite{left:205px;top:8px;width:109px;--r:0deg;--px:50%;--py:82%;--z:7}
+#bartenderRig .uaL{left:65.0300019184px;top:132px;width:142px;--r:337deg;--px:84%;--py:18%;--z:2}
+#bartenderRig .laL{left:115.19557693px;top:225.35241055px;width:139.775318151px;--r:45deg;--px:11.580980967%;--py:19.552479453%;--z:3}
+#bartenderRig .hL{left:145.699186639px;top:315.203208637px;width:130px;--r:70deg;--px:16.416372098%;--py:34.408792713%;--z:4}
+#bartenderRig .uaR{left:216.409998082px;top:132px;width:142px;--r:17deg;--px:84%;--py:18%;--z:2;transform:scaleX(-1) rotate(17deg)}
+#bartenderRig .laR{left:381.230313517px;top:219.594406806px;width:139.775318151px;--r:309deg;--px:11.580980967%;--py:19.552479453%;--z:3;transform:scaleX(-1) rotate(309deg)}
+#bartenderRig .hR{left:351.007552937px;top:312.494905814px;width:130px;--r:284deg;--px:16.416372098%;--py:34.408792713%;--z:4;transform:scaleX(-1) rotate(284deg)}
+
+/* 3.5 exact simulator transform semantics.
+   v40R renders every part independently at the saved final x/y and uses:
+   rotate(angle) scaleX(flip). Parent links affect editing, not runtime nesting.
+   These rules override 3.4's incorrect flip-before-rotate order. */
+#bartenderRig .uaR{transform:rotate(17deg) scaleX(-1)}
+#bartenderRig .laR{transform:rotate(309deg) scaleX(-1)}
+#bartenderRig .hR{transform:rotate(284deg) scaleX(-1)}
+
+
+/* 3.6 bartender config from simulator, 2026-09-19.
+   Preliminary simulator->game scale factor: 1.057.
+   42% => 44.394%; global offset (4.951171875,17.40234375) => (5.233388671875,18.39427734375). */
+#bartenderRig{
+  left:calc(50% + 5.233388671875px);
+  top:calc(7.5% + 18.39427734375px);
+  transform:translateX(-50%) scale(.44394);
+}
+#bartenderRig .torso{left:130px;top:95px;width:264px;--r:0deg;--px:50%;--py:50%;--z:0}
+#bartenderRig .headSprite{left:205px;top:8px;width:109px;--r:0deg;--px:50%;--py:82%;--z:7}
+#bartenderRig .uaL{left:65.03000191843637px;top:132px;width:142px;--r:337deg;--px:84%;--py:18%;--z:2;transform:rotate(337deg)}
+#bartenderRig .laL{left:115.1955769299717px;top:225.3524105498653px;width:139.77531815114472px;--r:45deg;--px:11.580980966766095%;--py:19.552479453032177%;--z:3;transform:rotate(45deg)}
+#bartenderRig .hL{left:145.69918663874407px;top:315.2032086370201px;width:130px;--r:13deg;--px:16.416372098057863%;--py:34.40879271335794%;--z:4;transform:rotate(13deg)}
+#bartenderRig .uaR{left:216.40999808156366px;top:132px;width:142px;--r:17deg;--px:84%;--py:18%;--z:2;transform:rotate(17deg) scaleX(-1)}
+#bartenderRig .laR{left:381.2303135168891px;top:219.59440680564256px;width:139.77531815114472px;--r:309deg;--px:11.580980966766095%;--py:19.552479453032177%;--z:3;transform:rotate(309deg) scaleX(-1)}
+#bartenderRig .hR{left:351.0075529372338px;top:312.4949058140274px;width:130px;--r:350deg;--px:16.416372098057863%;--py:34.40879271335794%;--z:4;transform:rotate(350deg) scaleX(-1)}
+
+/* v3.37: based directly on v3.8. Move actual #bartenderRig exactly 100 screen/CSS px downward. */
+#bartenderRig{top:calc(7.5% + 118.39427734375px)!important;}
+
+/* v3.37: align torso bottom to bar edge; move entire bartender rig 20px upward from v3.12. */
+#bartenderRig{top:calc(7.5% + 98.39427734375px)!important;}
+
+/* v3.37: move bartender rig 75 CSS px upward from v3.14 (screen-scale corrected from v3.15 observation). */
+#bartenderRig{top:calc(7.5% + 23.39427734375px)!important;}
+
+/* v3.37: align torso bottom to the true bar edge below the plants. +38.5 CSS px down from v3.16. */
+#bartenderRig{top:calc(7.5% + 61.89427734375px)!important;}
+
+/* v3.37: direct Mojito choice layout only. */
+#dialogControls:has(.choices){left:6px;right:6px;bottom:4px;width:auto;align-items:center;justify-content:flex-end}
+#dialogControls:has(.choices) .v31Controls{position:absolute;left:0;bottom:0}
+#dialogControls:has(.choices) .hintTitle{position:absolute;left:270px;bottom:18px;width:260px;margin:0;font-size:clamp(14px,1.7vw,19px);color:var(--accent);z-index:2}
+#dialogControls:has(.choices) .choices{display:grid;grid-template-columns:repeat(3,minmax(145px,1fr));gap:12px;width:min(62vw,940px);margin-left:auto}
+#dialogControls:has(.choices) .choice{min-height:64px;padding:10px 14px;font-size:clamp(16px,2vw,25px);line-height:1.15}
+
+/* v3.37: choices stay to the right of transcript/controls, no hint overlay. */
+#dialogControls:has(.choices){position:relative;left:0;right:0;bottom:0;width:100%;min-height:76px;padding-left:min(38vw,540px);display:block}
+#dialogControls:has(.choices) .v31Controls{position:absolute;left:6px;bottom:4px}
+#dialogControls:has(.choices) .hintTitle{display:none!important}
+#dialogControls:has(.choices) .choices{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;width:100%;margin:0}
+#dialogControls:has(.choices) .choice{min-width:0;min-height:64px;padding:10px 12px;font-size:clamp(16px,2vw,25px);line-height:1.15}
+.dialog.transcript:has(#dialogControls .choices) #dialogTranscript{width:min(36vw,520px);max-width:min(36vw,520px);margin-right:0}
+
+/* v3.37: fixed bottom layout.
+   Left: microphone, keyboard, print. Right: dialogue/transcript.
+   When choices appear they occupy the right-hand dialogue area. */
+.dialog{left:6px;right:6px;bottom:4px;width:auto;min-height:76px}
+.dialogText{position:absolute;left:270px;right:0;bottom:0;margin:0;max-width:none}
+#dialogTranscript{position:absolute;left:270px;right:0;bottom:0;margin:0;max-width:none}
+#dialogControls{position:absolute;left:0;right:0;bottom:0;width:100%;min-height:72px;display:block;pointer-events:none}
+#dialogControls .v31Controls{position:absolute;left:0;bottom:0;display:flex!important;gap:5px;align-items:center;pointer-events:auto}
+#dialogControls:has(.choices){left:0;right:0;bottom:0;width:100%;min-height:76px;padding:0;display:block}
+#dialogControls:has(.choices) .v31Controls{position:absolute;left:0;bottom:0}
+#dialogControls:has(.choices) .choices{position:absolute;left:270px;right:0;bottom:0;width:auto;margin:0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;pointer-events:auto}
+#dialogControls:has(.choices) .choice{min-width:0;min-height:64px;padding:10px 12px;font-size:clamp(16px,2vw,25px);line-height:1.15}
+.dialog:has(#dialogControls .choices) .dialogText,
+.dialog:has(#dialogControls .choices) #dialogTranscript{visibility:hidden}
+
+/* v3.37: ONLY functional change from v3.32 — move the three normal controls
+   by measured target delta: dx=+56px (right), dy=-27px (up).
+   v3.32 final position was left:0; bottom:0, so bottom:+27px moves upward. */
+#dialogControls .v31Controls,
+#dialogControls:has(.choices) .v31Controls{
+  left:56px;
+  bottom:27px;
+}
+
+/* v3.39: simulator pose with the established game calibration retained. */
+#bartenderRig{left:calc(50% + 5.233388671875px)!important;top:calc(7.5% + 61.89427734375px)!important;transform:translateX(-50%) scale(.44394)!important}
+#bartenderRig .torso{left:130px;top:95px;width:264px;--r:0deg;--px:50%;--py:50%;--z:0;transform:rotate(0deg)}
+#bartenderRig .headSprite{left:205px;top:-25.11852799969567px;width:119.64902797731287px;--r:0deg;--px:50%;--py:82%;--z:7;transform:rotate(0deg)}
+#bartenderRig .uaL{left:65.03000191843634px;top:132px;width:142px;--r:9deg;--px:84%;--py:18%;--z:2;transform:rotate(9deg)}
+#bartenderRig .laL{left:75.70941535670566px;top:184.36220504986733px;width:139.77531815114472px;--r:77deg;--px:11.580980966766095%;--py:19.552479453032177%;--z:3;transform:rotate(77deg)}
+#bartenderRig .hL{left:46.67218269649608px;top:277.5336818344548px;width:130px;--r:36deg;--px:16.416372098057863%;--py:34.40879271335794%;--z:4;transform:rotate(36deg)}
+#bartenderRig .uaR{left:216.40999808156366px;top:132px;width:142px;--r:61deg;--px:84%;--py:18%;--z:2;transform:rotate(61deg) scaleX(-1)}
+#bartenderRig .laR{left:305.9466079949074px;top:238.81293897039575px;width:139.77531815114472px;--r:353deg;--px:11.580980966766095%;--py:19.552479453032177%;--z:3;transform:rotate(353deg) scaleX(-1)}
+#bartenderRig .hR{left:208.9907184742018px;top:285.08672121014234px;width:130px;--r:34deg;--px:16.416372098057863%;--py:34.40879271335794%;--z:4;transform:rotate(34deg) scaleX(-1)}
+/* v3.41: bottle mapped directly to full 16:9 game scene; simulator scene reference 1044 x 587.25 */
+#barObjectLayer{position:absolute;z-index:20;inset:0;pointer-events:none}
+#whiteRumBottle{position:absolute;left:31.4065%;top:calc(22.2995% - 64.9%);width:4.8918%;aspect-ratio:2/3;transform-origin:50% 50%;transform:rotate(0deg);z-index:20}
+#whiteRumBottle img{position:absolute;pointer-events:none;user-select:none}
+#whiteRumBottle .bottleBase{left:0;top:0;width:100%;height:100%;object-fit:contain}
+#whiteRumBottle .bottleLabel{left:18%;top:43%;width:64%;height:43%;object-fit:contain}
+#whiteRumBottle .bottleCap{left:30%;top:-1%;width:40%;height:19%;object-fit:contain}
