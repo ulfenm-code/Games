@@ -237,7 +237,9 @@ body.debug-mode .ingredientHit{display:flex}
     const rendered={};
     for(const [z,e] of els){
       let left=ox+z.x*SOURCE_W*s;
+      let top=oy+z.y*SOURCE_H*s;
       let width=z.w*SOURCE_W*s+((z.id==="crate1"||z.id==="crate2"||z.id==="crate3"||z.id==="crate4")?20:0);
+      let height=z.h*SOURCE_H*s;
       if(z.id==="crate2") width-=10;
       if(z.id==="crate3"){left-=10;width-=5}
       if(z.id==="crate4"){
@@ -245,12 +247,16 @@ body.debug-mode .ingredientHit{display:flex}
         if(g3) left=g3.left+g3.width-20;
       }
       if(z.id==="pineapple"){
+        width+=15;
+        top-=20;
+        height+=20;
         const g1=rendered.crate1;
         if(g1) left=g1.left+20-width;
       }
-      e.style.left=left+"px";e.style.top=(oy+z.y*SOURCE_H*s)+"px";e.style.width=width+"px";e.style.height=(z.h*SOURCE_H*s)+"px";rendered[z.id]={left,width}
+      if(z.id==="iceCubes"||z.id==="crushedIce"||z.id==="iceFlakes") height+=5;
+      e.style.left=left+"px";e.style.top=top+"px";e.style.width=width+"px";e.style.height=height+"px";rendered[z.id]={left,width}
     }
-    window.__barDebug370={enabled:document.body.classList.contains("debug-mode"),sourceWidth:SOURCE_W,sourceHeight:SOURCE_H,renderScale:s,offsetX:ox,offsetY:oy,zones:zones.map(z=>({...z}))};
+    window.__barDebug371={enabled:document.body.classList.contains("debug-mode"),sourceWidth:SOURCE_W,sourceHeight:SOURCE_H,renderScale:s,offsetX:ox,offsetY:oy,zones:zones.map(z=>({...z}))};
   }
   btn.addEventListener("click",()=>{const on=document.body.classList.toggle("debug-mode");btn.classList.toggle("debugOn",on);btn.setAttribute("aria-pressed",String(on));layout()});
   window.addEventListener("resize",layout);window.addEventListener("orientationchange",()=>setTimeout(layout,100));layout();
