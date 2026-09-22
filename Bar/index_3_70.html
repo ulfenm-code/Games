@@ -216,17 +216,21 @@ body.debug-mode .ingredientHit{display:flex}
   function layout(){
     const r=scene.getBoundingClientRect(); if(!r.width||!r.height)return;
     const s=Math.max(r.width/SOURCE_W,r.height/SOURCE_H), rw=SOURCE_W*s,rh=SOURCE_H*s,ox=(r.width-rw)/2,oy=(r.height-rh)/2;
+    const rendered={};
     for(const [z,e] of els){
       let left=ox+z.x*SOURCE_W*s;
       let width=z.w*SOURCE_W*s+((z.id==="crate1"||z.id==="crate2"||z.id==="crate3"||z.id==="crate4")?20:0);
       if(z.id==="crate2") width-=10;
-      if(z.id==="crate3"){left-=10;width-=10}
+      if(z.id==="crate3"){left-=10;width-=5}
       if(z.id==="crate4"){
-        const z8=zones.find(q=>q.id==="crate8");
-        const right8=ox+(z8.x+z8.w)*SOURCE_W*s;
-        left=right8-width;
+        const g3=rendered.crate3;
+        if(g3) left=g3.left+g3.width-20;
       }
-      e.style.left=left+"px";e.style.top=(oy+z.y*SOURCE_H*s)+"px";e.style.width=width+"px";e.style.height=(z.h*SOURCE_H*s)+"px"
+      if(z.id==="pineapple"){
+        const g1=rendered.crate1;
+        if(g1) left=g1.left+20-width;
+      }
+      e.style.left=left+"px";e.style.top=(oy+z.y*SOURCE_H*s)+"px";e.style.width=width+"px";e.style.height=(z.h*SOURCE_H*s)+"px";rendered[z.id]={left,width}
     }
     window.__barDebug370={enabled:document.body.classList.contains("debug-mode"),sourceWidth:SOURCE_W,sourceHeight:SOURCE_H,renderScale:s,offsetX:ox,offsetY:oy,zones:zones.map(z=>({...z}))};
   }
