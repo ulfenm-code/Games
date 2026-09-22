@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
 <meta name="theme-color" content="#101014">
-<title>Bar Game – Version 3.70</title>
+<title>Bar Game – Version 3.71</title>
 <link rel="stylesheet" href="bar_v3_56.css">
 <style>
 /* v3.49: use the agreed tropical bar background and a gameplay-controlled Highball glass. */
@@ -21,6 +21,7 @@
   user-select:none;
   object-fit:contain;
 }
+#drinkMenuSprite{position:absolute;display:block;pointer-events:auto;user-select:none;object-fit:contain;cursor:pointer;touch-action:manipulation}
 
 #ingredientDebugLayer{position:absolute;inset:0;z-index:60;pointer-events:none}
 .ingredientHit{position:absolute;box-sizing:border-box;border:3px solid rgba(255,255,255,.95);background:rgba(255,255,255,.18);color:#fff;font:700 18px/1 sans-serif;text-shadow:0 1px 3px #000;display:none;align-items:center;justify-content:center;pointer-events:auto;touch-action:manipulation}
@@ -32,7 +33,7 @@ body.debug-mode .ingredientHit{display:flex}
 <body>
 <div id="toast"></div>
 <section id="startScreen" class="screen active center"><div class="card">
-<div class="version">VERSION 3.70 · DEBUG</div><h1>BAR GAME</h1><p class="lead">Blanda, muddla, skaka och smaka. Telefonen blir en del av baren.</p>
+<div class="version">VERSION 3.71 · DEBUG</div><h1>BAR GAME</h1><p class="lead">Blanda, muddla, skaka och smaka. Telefonen blir en del av baren.</p>
 <label>Ditt namn</label><input id="nameInput" maxlength="24" autocomplete="name" placeholder="Till exempel Ulf">
 <label>Din ålder</label><input id="ageInput" type="number" inputmode="numeric" min="1" max="120" placeholder="18">
 <label>Svårighetsgrad</label><div class="difficultySelect">
@@ -57,7 +58,7 @@ body.debug-mode .ingredientHit{display:flex}
 <img class="bartenderPart uaR" src="upperarm_hoger.png">
 <img class="bartenderPart laR" src="lowerarm_hoger.png">
 <img class="bartenderPart hR" src="hand_hoger_relax.png">
-</div><div id="ingredientDebugLayer" aria-hidden="true"></div><div id="barObjectLayer" style="visibility:hidden"><div id="whiteRumBottle" role="button" tabindex="0" aria-label="White Rum" data-spirit="white-rum"><img class="bottleBase" src="Genomskinlig%2520tom%2520glasflaska%2520i%2520glas.png"><img class="bottleLabel" src="Elegant%2520vit%2520rom-etikett%2520med%2520palmtr%C3%A4d.png"><img class="bottleCap" src="Detaljerad%2520gyllene%2520skruvkork%2520i%2520metall.png"></div><img id="highballGlass" src="sim_highball_glas.png" alt="" aria-hidden="true"></div><div class="shelf"><div class="bottles" id="bottles"></div></div><div class="bartender"><div class="head"><i class="eye left"></i><i class="eye right"></i><i class="mouth"></i></div><div class="body"><div class="apron"></div></div></div><div class="barcounter"><div class="counterItems"><div>🍋<small>Citron</small></div><div>🟢<small>Lime</small></div><div>🌿<small>Mynta</small></div><div>🧊<small>Is</small></div><div>🧂<small>Salt</small></div><div>🥄<small>Socker</small></div></div></div></div>
+</div><div id="ingredientDebugLayer" aria-hidden="true"></div><div id="barObjectLayer" style="visibility:hidden"><div id="whiteRumBottle" role="button" tabindex="0" aria-label="White Rum" data-spirit="white-rum"><img class="bottleBase" src="Genomskinlig%2520tom%2520glasflaska%2520i%2520glas.png"><img class="bottleLabel" src="Elegant%2520vit%2520rom-etikett%2520med%2520palmtr%C3%A4d.png"><img class="bottleCap" src="Detaljerad%2520gyllene%2520skruvkork%2520i%2520metall.png"></div><img id="highballGlass" src="sim_highball_glas.png" alt="" aria-hidden="true"><img id="drinkMenuSprite" src="Drink_list.png" alt="Drinklista" role="button" tabindex="0" aria-label="Öppna drinklistan"></div><div class="shelf"><div class="bottles" id="bottles"></div></div><div class="bartender"><div class="head"><i class="eye left"></i><i class="eye right"></i><i class="mouth"></i></div><div class="body"><div class="apron"></div></div></div><div class="barcounter"><div class="counterItems"><div>🍋<small>Citron</small></div><div>🟢<small>Lime</small></div><div>🌿<small>Mynta</small></div><div>🧊<small>Is</small></div><div>🧂<small>Salt</small></div><div>🥄<small>Socker</small></div></div></div></div>
 <div id="orientationBanner" class="orientationBanner">↻ Vrid telefonen vågrätt för bästa barscen.<button id="tryLandscapeBtn">Försök automatiskt</button></div>
 <div class="hud"><div class="badge" id="hudPlayer">Spelare</div><div class="badge" id="hudDrink">Ingen beställning ännu</div></div><div class="dialog"><div class="dialogName">Bartendern · AI</div><div id="dialogText" class="dialogText"></div><div id="dialogControls"></div></div></section>
 <section id="actionScreen" class="screen action"><div id="rotateStage" class="actionPanel"><div class="phoneIcon">📱↻</div><h2 id="rotateTitle">Vrid telefonen till stående</h2><p id="rotateHint">Telefonen blir redskapet i nästa moment.</p><button id="startPortraitBtn" class="btn">Starta stående moment</button><p class="small">Om mobilen inte roterar automatiskt: vrid den själv.</p></div>
@@ -73,7 +74,7 @@ body.debug-mode .ingredientHit{display:flex}
   const rig=document.getElementById("bartenderRig");
   const objectLayer=document.getElementById("barObjectLayer");
   const PARTS={torso:".torso",head:".headSprite",uaL:".uaL",laL:".laL",hL:".hL",uaR:".uaR",laR:".laR",hR:".hR"};
-  const CONFIG_URL="./bartender_installningar_start4.json";
+  const CONFIG_URL="./bartender_installningar_start5.json";
   const GAME_CALIBRATION_FACTOR=1.21;
   const REFERENCE_BAR_SCENE_HEIGHT=710;
   const sceneRect=document.getElementById("barScene")?.getBoundingClientRect();
