@@ -123,6 +123,21 @@ body.debug-mode .ingredientHit{display:flex}
     el.style.zIndex=String(p.z);
     diagnostics.appliedObjects.push("whiteRum");
   }
+  function applyDrinkMenu(p){
+    const el=document.getElementById("drinkMenuSprite");
+    if(!el)throw new Error("Drinklista-objektet saknas i DOM");
+    if(!finite(p.x)||!finite(p.y)||!finite(p.w)||!finite(p.r)||!finite(p.px)||!finite(p.py)||!finite(p.z))throw new Error("Ogiltig Drinklista-konfiguration");
+    const layerCenterX=260, layerCenterY=250;
+    const w=p.w*GAME_SCALE_FACTOR;
+    el.style.left=(layerCenterX+(p.x-layerCenterX)*GAME_SCALE_FACTOR)+"px";
+    el.style.top=(layerCenterY+(p.y-layerCenterY)*GAME_SCALE_FACTOR)+"px";
+    el.style.width=w+"px";
+    el.style.height=(w*(1193/1041))+"px";
+    el.style.transformOrigin=p.px+"% "+p.py+"%";
+    el.style.transform="rotate("+p.r+"deg)";
+    el.style.zIndex=String(p.z);
+    diagnostics.appliedObjects.push("drinkMenu");
+  }
 
   try{
     const response=await fetch(CONFIG_URL,{cache:"no-store"});
@@ -173,6 +188,8 @@ body.debug-mode .ingredientHit{display:flex}
       }
       if(key==="whiteRum"){
         applyWhiteRum(p);
+      }else if(key==="drinkMenu"){
+        applyDrinkMenu(p);
       }else{
         diagnostics.unrenderedObjects.push(key);
       }
@@ -182,9 +199,9 @@ body.debug-mode .ingredientHit{display:flex}
     diagnostics.loaded=true;
   }catch(err){
     diagnostics.error=String(err&&err.message?err.message:err);
-    console.error("Bar v3.59 bartender config:",err);
+    console.error("Bar v3.71 bartender config:",err);
   }finally{
-    window.__barConfig359=diagnostics;
+    window.__barConfig371=diagnostics;
     reveal();
   }
 })();
