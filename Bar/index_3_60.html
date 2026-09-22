@@ -1,0 +1,226 @@
+<!doctype html>
+<html lang="sv">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<meta name="theme-color" content="#101014">
+<title>Bar Game – Version 3.60</title>
+<link rel="stylesheet" href="bar_v3_56.css">
+<style>
+/* v3.49: use the agreed tropical bar background and a gameplay-controlled Highball glass. */
+#barScene.tropical{
+  background-image:url("./1789924559656.png")!important;
+  background-size:cover!important;
+  background-position:center!important;
+  background-repeat:no-repeat!important;
+}
+#highballGlass{
+  position:absolute;
+  display:none;
+  pointer-events:none;
+  user-select:none;
+  object-fit:contain;
+}
+
+#ingredientDebugLayer{position:absolute;inset:0;z-index:60;pointer-events:none}
+.ingredientHit{position:absolute;box-sizing:border-box;border:3px solid rgba(255,255,255,.95);background:rgba(255,255,255,.18);color:#fff;font:700 18px/1 sans-serif;text-shadow:0 1px 3px #000;display:none;align-items:center;justify-content:center;pointer-events:auto;touch-action:manipulation}
+body.debug-mode .ingredientHit{display:flex}
+#debugBtn.debugOn{outline:3px solid rgba(255,255,255,.9)}
+</style>
+</head>
+<body>
+<div id="toast"></div>
+<section id="startScreen" class="screen active center"><div class="card">
+<div class="version">VERSION 3.60 · DEBUG</div><h1>BAR GAME</h1><p class="lead">Blanda, muddla, skaka och smaka. Telefonen blir en del av baren.</p>
+<label>Ditt namn</label><input id="nameInput" maxlength="24" autocomplete="name" placeholder="Till exempel Ulf">
+<label>Din ålder</label><input id="ageInput" type="number" inputmode="numeric" min="1" max="120" placeholder="18">
+<label>Svårighetsgrad</label><div class="difficultySelect">
+<button type="button" class="difficultyBtn selected" data-difficulty="easy">Lätt<small>3 alternativ</small></button>
+<button type="button" class="difficultyBtn" data-difficulty="medium">Medel<small>skriv eller prata</small></button>
+<button type="button" class="difficultyBtn" data-difficulty="hard">Svår<small>även mängder</small></button></div>
+<div id="difficultyHelp" class="diffHelp">Lätt: välj mellan tre alternativ eller säg svaret.</div><div id="startError" class="error"></div>
+<div class="row"><button id="enterBtn" class="btn">Gå in i baren</button><button id="sensorBtn" class="btn secondary">Tillåt sensorer</button><button id="debugBtn" class="btn secondary" type="button" aria-pressed="false">Debug</button></div>
+<p class="small">Under 18 används bara alkoholfria recept. På iPhone kan sensorer behöva godkännas manuellt.</p></div></section>
+<section id="moodScreen" class="screen center"><div class="card wide"><div class="bartenderFace">🙂</div><h2 id="moodHello">Välkommen!</h2><p id="moodPrompt">Vilket mood är du på idag?</p><div class="moods">
+<button class="mood" data-mood="party"><b>🎉 Festligt och färgglatt</b><span>Puls, city lights och show.</span></button>
+<button class="mood" data-mood="tropical"><b>🌴 Tropiskt och avslappnat</b><span>Bambu, palmer och semester.</span></button>
+<button class="mood" data-mood="classic"><b>🥃 Lugnt och klassiskt</b><span>Mörkt trä och Manhattan-känsla.</span></button>
+<button class="mood" data-mood="elegant"><b>🍸 Elegant och exklusivt</b><span>Varm hotellbar och finare servering.</span></button>
+<button class="mood" data-mood="surprise"><b>🎲 Överraska mig</b><span>Bartendern väljer.</span></button></div></div></section>
+<section id="barScreen" class="screen"><div id="barScene" class="tropical"><div class="ambient"></div><div id="bartenderRig" class="bartenderRig" aria-hidden="true" style="visibility:hidden">
+<img class="bartenderPart torso" src="torso_fram.png">
+<img class="bartenderPart headSprite" src="head_neutral.png">
+<img class="bartenderPart uaL" src="upperarm_hoger.png">
+<img class="bartenderPart laL" src="lowerarm_hoger.png">
+<img class="bartenderPart hL" src="hand_hoger_relax.png">
+<img class="bartenderPart uaR" src="upperarm_hoger.png">
+<img class="bartenderPart laR" src="lowerarm_hoger.png">
+<img class="bartenderPart hR" src="hand_hoger_relax.png">
+</div><div id="ingredientDebugLayer" aria-hidden="true"></div><div id="barObjectLayer" style="visibility:hidden"><div id="whiteRumBottle" role="button" tabindex="0" aria-label="White Rum" data-spirit="white-rum"><img class="bottleBase" src="Genomskinlig%2520tom%2520glasflaska%2520i%2520glas.png"><img class="bottleLabel" src="Elegant%2520vit%2520rom-etikett%2520med%2520palmtr%C3%A4d.png"><img class="bottleCap" src="Detaljerad%2520gyllene%2520skruvkork%2520i%2520metall.png"></div><img id="highballGlass" src="sim_highball_glas.png" alt="" aria-hidden="true"></div><div class="shelf"><div class="bottles" id="bottles"></div></div><div class="bartender"><div class="head"><i class="eye left"></i><i class="eye right"></i><i class="mouth"></i></div><div class="body"><div class="apron"></div></div></div><div class="barcounter"><div class="counterItems"><div>🍋<small>Citron</small></div><div>🟢<small>Lime</small></div><div>🌿<small>Mynta</small></div><div>🧊<small>Is</small></div><div>🧂<small>Salt</small></div><div>🥄<small>Socker</small></div></div></div></div>
+<div id="orientationBanner" class="orientationBanner">↻ Vrid telefonen vågrätt för bästa barscen.<button id="tryLandscapeBtn">Försök automatiskt</button></div>
+<div class="hud"><div class="badge" id="hudPlayer">Spelare</div><div class="badge" id="hudDrink">Ingen beställning ännu</div></div><div class="dialog"><div class="dialogName">Bartendern · AI</div><div id="dialogText" class="dialogText"></div><div id="dialogControls"></div></div></section>
+<section id="actionScreen" class="screen action"><div id="rotateStage" class="actionPanel"><div class="phoneIcon">📱↻</div><h2 id="rotateTitle">Vrid telefonen till stående</h2><p id="rotateHint">Telefonen blir redskapet i nästa moment.</p><button id="startPortraitBtn" class="btn">Starta stående moment</button><p class="small">Om mobilen inte roterar automatiskt: vrid den själv.</p></div>
+<div id="muddleStage" class="actionPanel hidden"><h2>Muddla myntan</h2><p>Tryck och gnugga myntan och limen med fingret – försiktigt, inte till mos.</p><div id="muddleGlass" class="muddleGlass"><span class="leaf l1">🌿</span><span class="leaf l2">🌿</span><span class="leaf l3">🌿</span><span class="limeSlice a">🟢</span><span class="limeSlice b">🟢</span><div class="muddler"></div></div><div class="meter"><div id="muddleFill" class="meterFill"></div></div><p id="muddleStatus">0%</p><button id="muddleFallback" class="btn secondary">Simulera muddling</button></div>
+<div id="shakeStage" class="actionPanel hidden"><h2>Skaka!</h2><p>Håll telefonen stadigt och skaka som en riktig shaker.</p><div class="shaker"><div class="cap"></div><div class="cup"></div><div class="icebits">◆ ◇ ◆ ◇</div></div><div class="meter"><div id="shakeFill" class="meterFill"></div></div><p id="shakeStatus">0%</p><button id="shakeFallback" class="btn secondary">Simulera skakning</button></div>
+<div id="drinkStage" class="actionPanel hidden"><h2>Smaka</h2><p>Telefonen är glaset. För den mot munnen och luta den.</p><div class="glass"><div id="liquid" class="liquid"></div><div class="glassIce">◇ ◇</div><div class="glassLime">◔</div></div><div class="meter"><div id="drinkFill" class="meterFill"></div></div><p id="drinkStatus">Glaset är fullt.</p><button id="drinkFallback" class="btn secondary">Simulera att du dricker</button></div>
+<div id="returnStage" class="actionPanel hidden"><div class="phoneIcon">📱↻</div><h2>Klart!</h2><p id="returnText">Vrid tillbaka till liggande läge. Spelet fortsätter automatiskt när landscape upptäcks.</p><button id="returnBarBtn" class="btn">Tillbaka till baren</button></div></section>
+<section id="resultScreen" class="screen center"><div class="card resultCard"><h2 id="resultTitle">Drink klar!</h2><div id="scoreValue" class="score">0</div><p id="resultLine"></p><div id="scoreGrid" class="scoreGrid"></div><div class="row centerRow"><button id="anotherBtn" class="btn">En till</button><button id="changeMoodBtn" class="btn secondary">Byt mood / bar</button></div></div></section>
+<script>
+/* v3.49: load the locked Bartender Simulator v63 start config.
+   Glass objects from the simulator config are intentionally ignored in the game. */
+(async function(){
+  const rig=document.getElementById("bartenderRig");
+  const objectLayer=document.getElementById("barObjectLayer");
+  const PARTS={torso:".torso",head:".headSprite",uaL:".uaL",laL:".laL",hL:".hL",uaR:".uaR",laR:".laR",hR:".hR"};
+  const CONFIG_URL="./bartender_installningar_start4.json";
+  const GAME_CALIBRATION_FACTOR=1.21;
+  const REFERENCE_BAR_SCENE_HEIGHT=710;
+  const sceneRect=document.getElementById("barScene")?.getBoundingClientRect();
+  const BAR_SCENE_FACTOR=(sceneRect&&sceneRect.height>0)?sceneRect.height/REFERENCE_BAR_SCENE_HEIGHT:1;
+  const GAME_SCALE_FACTOR=GAME_CALIBRATION_FACTOR*BAR_SCENE_FACTOR;
+  window.__barScale359={referenceSceneHeight:REFERENCE_BAR_SCENE_HEIGHT,sceneWidth:sceneRect?.width??null,sceneHeight:sceneRect?.height??null,sceneFactor:BAR_SCENE_FACTOR,calibrationFactor:GAME_CALIBRATION_FACTOR,finalGameFactor:GAME_SCALE_FACTOR};
+  const GAME_BOTTLE_Y_OFFSET_PX=4;
+  const diagnostics={loaded:false,configUrl:CONFIG_URL,configVersion:null,appliedParts:[],appliedObjects:[],ignoredObjects:[],unrenderedObjects:[],error:null};
+
+  function reveal(){
+    if(rig)rig.style.visibility="visible";
+    if(objectLayer)objectLayer.style.visibility="visible";
+  }
+  function finite(v){return typeof v==="number"&&Number.isFinite(v)}
+  function requirePart(p,key){
+    if(!p||!finite(p.x)||!finite(p.y)||!finite(p.w)||!finite(p.r)||!finite(p.px)||!finite(p.py)||!finite(p.z))throw new Error("Ogiltig bartenderdel: "+key);
+  }
+  function isGlassKey(key){return String(key).toLowerCase().includes("glass")}
+  function applyPart(key,p){
+    requirePart(p,key);
+    const el=rig?.querySelector(PARTS[key]);
+    if(!el)throw new Error("Saknad DOM-del: "+key);
+    el.style.left=p.x+"px";
+    el.style.top=p.y+"px";
+    el.style.width=p.w+"px";
+    el.style.transformOrigin=p.px+"% "+p.py+"%";
+    el.style.setProperty("--px",p.px+"%");
+    el.style.setProperty("--py",p.py+"%");
+    el.style.setProperty("--r",p.r+"deg");
+    el.style.setProperty("--z",String(p.z));
+    el.style.zIndex=String(p.z);
+    el.style.transform="rotate("+p.r+"deg) scaleX("+(p.flipX?-1:1)+")";
+    diagnostics.appliedParts.push(key);
+  }
+  function applyWhiteRum(p){
+    const el=document.getElementById("whiteRumBottle");
+    if(!el)throw new Error("White Rum-objektet saknas i DOM");
+    if(!finite(p.x)||!finite(p.y)||!finite(p.w)||!finite(p.r)||!finite(p.px)||!finite(p.py)||!finite(p.z))throw new Error("Ogiltig White Rum-konfiguration");
+    const layerCenterX=260, layerCenterY=250;
+    el.style.left=(layerCenterX+(p.x-layerCenterX)*GAME_SCALE_FACTOR)+"px";
+    el.style.top=(layerCenterY+(p.y-layerCenterY)*GAME_SCALE_FACTOR+GAME_BOTTLE_Y_OFFSET_PX)+"px";
+    el.style.width=(p.w*GAME_SCALE_FACTOR)+"px";
+    el.style.height=(p.w*1.5*GAME_SCALE_FACTOR)+"px";
+    el.style.transformOrigin=p.px+"% "+p.py+"%";
+    el.style.transform="rotate("+p.r+"deg)";
+    el.style.zIndex=String(p.z);
+    diagnostics.appliedObjects.push("whiteRum");
+  }
+
+  try{
+    const response=await fetch(CONFIG_URL,{cache:"no-store"});
+    if(!response.ok)throw new Error("Config HTTP "+response.status);
+    const cfg=await response.json();
+    diagnostics.configVersion=cfg.version??null;
+
+    if(!cfg.parts||!cfg.objects)throw new Error("Config saknar parts eller objects");
+    if(!finite(cfg.scalePct)||!cfg.bartenderOffset||!finite(cfg.bartenderOffset.x)||!finite(cfg.bartenderOffset.y))throw new Error("Config saknar giltig skala/offset");
+
+    const required=Object.keys(PARTS);
+    for(const key of required){
+      if(!cfg.parts[key])throw new Error("Config saknar bartenderdel: "+key);
+    }
+
+    const scale=(cfg.scalePct/100)*GAME_SCALE_FACTOR;
+    rig.style.setProperty("left","50%","important");
+    rig.style.setProperty("top","49%","important");
+    rig.style.setProperty("width","520px","important");
+    rig.style.setProperty("height","500px","important");
+    rig.style.setProperty("transform-origin","50% 50%","important");
+    rig.style.setProperty("transform","translate(-50%,-50%) translate("+(cfg.bartenderOffset.x*GAME_SCALE_FACTOR)+"px,"+(cfg.bartenderOffset.y*GAME_SCALE_FACTOR)+"px) scale("+scale+")","important");
+
+    required.forEach(key=>applyPart(key,cfg.parts[key]));
+
+    /* v3.52: apply the simulator v68 headSystem, including master anchor,
+       master width/rotation, active variant and variant-specific pivot. */
+    if(!cfg.headSystem?.master?.anchor||!cfg.headSystem?.neutral||!cfg.headSystem?.blink)throw new Error("Config saknar giltigt headSystem");
+    const activeHead=cfg.headSystem.active==="headBlink"?"blink":"neutral";
+    const hv=cfg.headSystem[activeHead];
+    const headEl=rig?.querySelector(PARTS.head);
+    if(!headEl)throw new Error("Huvudelementet saknas");
+    headEl.src=hv.file;
+    await new Promise(resolve=>{if(headEl.complete)resolve();else{headEl.addEventListener("load",resolve,{once:true});headEl.addEventListener("error",resolve,{once:true});}});
+    const hw=Number(cfg.headSystem.master.w), hr=Number(cfg.headSystem.master.r);
+    const hpx=Number(hv.px), hpy=Number(hv.py);
+    const ratio=(headEl.naturalWidth>0&&headEl.naturalHeight>0)?headEl.naturalHeight/headEl.naturalWidth:null;
+    if(!finite(hw)||!finite(hr)||!finite(hpx)||!finite(hpy)||!ratio)throw new Error("Ogiltiga headSystem-parametrar");
+    const hh=hw*ratio;
+    const hx=Number(cfg.headSystem.master.anchor.x)-hw*hpx/100;
+    const hy=Number(cfg.headSystem.master.anchor.y)-hh*hpy/100;
+    applyPart("head",{...cfg.parts.head,file:hv.file,x:hx,y:hy,w:hw,r:hr,px:hpx,py:hpy,z:cfg.parts.head.z});
+
+    for(const [key,p] of Object.entries(cfg.objects)){
+      if(isGlassKey(key)){
+        diagnostics.ignoredObjects.push(key);
+        continue;
+      }
+      if(key==="whiteRum"){
+        applyWhiteRum(p);
+      }else{
+        diagnostics.unrenderedObjects.push(key);
+      }
+    }
+
+    document.getElementById("mojitoGlass")?.remove();
+    diagnostics.loaded=true;
+  }catch(err){
+    diagnostics.error=String(err&&err.message?err.message:err);
+    console.error("Bar v3.59 bartender config:",err);
+  }finally{
+    window.__barConfig359=diagnostics;
+    reveal();
+  }
+})();
+</script>
+<script>
+/* v3.60 generic Debug switch + first debug feature: 8 crate zones and the large pineapple.
+   Zones use normalized source-image coordinates and are mapped through the same centered
+   background-size:cover transform as the tropical background. */
+(function(){
+  const SOURCE_W=1536, SOURCE_H=864;
+  const zones=[
+    {id:"crate1",label:"1",x:0.012,y:0.520,w:0.068,h:0.096},
+    {id:"crate2",label:"2",x:0.086,y:0.520,w:0.068,h:0.096},
+    {id:"crate3",label:"3",x:0.160,y:0.520,w:0.068,h:0.096},
+    {id:"crate4",label:"4",x:0.234,y:0.520,w:0.068,h:0.096},
+    {id:"crate5",label:"5",x:0.012,y:0.625,w:0.068,h:0.096},
+    {id:"crate6",label:"6",x:0.086,y:0.625,w:0.068,h:0.096},
+    {id:"crate7",label:"7",x:0.160,y:0.625,w:0.068,h:0.096},
+    {id:"crate8",label:"8",x:0.234,y:0.625,w:0.068,h:0.096},
+    {id:"pineapple",label:"9",x:0.000,y:0.485,w:0.045,h:0.210}
+  ];
+  const layer=document.getElementById("ingredientDebugLayer");
+  const scene=document.getElementById("barScene");
+  const btn=document.getElementById("debugBtn");
+  if(!layer||!scene||!btn)return;
+  const els=zones.map(z=>{const e=document.createElement("button");e.type="button";e.className="ingredientHit";e.dataset.ingredientZone=z.id;e.textContent=z.label;e.title=z.id;e.addEventListener("click",()=>{const t=document.getElementById("toast");if(t){t.textContent="Debug: "+z.id;t.classList.add("show");setTimeout(()=>t.classList.remove("show"),1000)}});layer.appendChild(e);return [z,e]});
+  function layout(){
+    const r=scene.getBoundingClientRect(); if(!r.width||!r.height)return;
+    const s=Math.max(r.width/SOURCE_W,r.height/SOURCE_H), rw=SOURCE_W*s,rh=SOURCE_H*s,ox=(r.width-rw)/2,oy=(r.height-rh)/2;
+    for(const [z,e] of els){e.style.left=(ox+z.x*SOURCE_W*s)+"px";e.style.top=(oy+z.y*SOURCE_H*s)+"px";e.style.width=(z.w*SOURCE_W*s)+"px";e.style.height=(z.h*SOURCE_H*s)+"px"}
+    window.__barDebug360={enabled:document.body.classList.contains("debug-mode"),sourceWidth:SOURCE_W,sourceHeight:SOURCE_H,renderScale:s,offsetX:ox,offsetY:oy,zones:zones.map(z=>({...z}))};
+  }
+  btn.addEventListener("click",()=>{const on=document.body.classList.toggle("debug-mode");btn.classList.toggle("debugOn",on);btn.setAttribute("aria-pressed",String(on));layout()});
+  window.addEventListener("resize",layout);window.addEventListener("orientationchange",()=>setTimeout(layout,100));layout();
+})();
+</script>
+<script src="bar_v3_47_core.js"></script>
+<script src="bar_v3_47_actions.js"></script>
+<script src="bar_v3_47_ai.js"></script><script src="bar_v3_47_ui.js"></script>
+<script src="bar_v3_59_glass.js"></script>
+</body></html>
