@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
 <meta name="theme-color" content="#101014">
-<title>Bar Game – Version 3.69</title>
+<title>Bar Game – Version 3.70</title>
 <link rel="stylesheet" href="bar_v3_56.css">
 <style>
 /* v3.49: use the agreed tropical bar background and a gameplay-controlled Highball glass. */
@@ -32,7 +32,7 @@ body.debug-mode .ingredientHit{display:flex}
 <body>
 <div id="toast"></div>
 <section id="startScreen" class="screen active center"><div class="card">
-<div class="version">VERSION 3.69 · DEBUG</div><h1>BAR GAME</h1><p class="lead">Blanda, muddla, skaka och smaka. Telefonen blir en del av baren.</p>
+<div class="version">VERSION 3.70 · DEBUG</div><h1>BAR GAME</h1><p class="lead">Blanda, muddla, skaka och smaka. Telefonen blir en del av baren.</p>
 <label>Ditt namn</label><input id="nameInput" maxlength="24" autocomplete="name" placeholder="Till exempel Ulf">
 <label>Din ålder</label><input id="ageInput" type="number" inputmode="numeric" min="1" max="120" placeholder="18">
 <label>Svårighetsgrad</label><div class="difficultySelect">
@@ -203,7 +203,10 @@ body.debug-mode .ingredientHit{display:flex}
     {id:"crate6",label:"6",x:0.073,y:0.651574,w:0.075,h:0.096},
     {id:"crate7",label:"7",x:0.148,y:0.651574,w:0.064,h:0.096},
     {id:"crate8",label:"8",x:0.212,y:0.651574,w:0.070,h:0.096},
-    {id:"pineapple",label:"9",x:-0.030,y:0.485,w:0.060,h:0.145}
+    {id:"pineapple",label:"9",x:-0.030,y:0.485,w:0.060,h:0.145},
+    {id:"iceCubes",label:"10",x:0.5397,y:0.6417,w:0.0659,h:0.0959},
+    {id:"crushedIce",label:"11",x:0.6056,y:0.6417,w:0.0675,h:0.0959},
+    {id:"iceFlakes",label:"12",x:0.6731,y:0.6417,w:0.0675,h:0.0959}
   ];
   const layer=document.getElementById("ingredientDebugLayer");
   const scene=document.getElementById("barScene");
@@ -225,7 +228,7 @@ body.debug-mode .ingredientHit{display:flex}
       }
       e.style.left=left+"px";e.style.top=(oy+z.y*SOURCE_H*s)+"px";e.style.width=width+"px";e.style.height=(z.h*SOURCE_H*s)+"px"
     }
-    window.__barDebug369={enabled:document.body.classList.contains("debug-mode"),sourceWidth:SOURCE_W,sourceHeight:SOURCE_H,renderScale:s,offsetX:ox,offsetY:oy,zones:zones.map(z=>({...z}))};
+    window.__barDebug370={enabled:document.body.classList.contains("debug-mode"),sourceWidth:SOURCE_W,sourceHeight:SOURCE_H,renderScale:s,offsetX:ox,offsetY:oy,zones:zones.map(z=>({...z}))};
   }
   btn.addEventListener("click",()=>{const on=document.body.classList.toggle("debug-mode");btn.classList.toggle("debugOn",on);btn.setAttribute("aria-pressed",String(on));layout()});
   window.addEventListener("resize",layout);window.addEventListener("orientationchange",()=>setTimeout(layout,100));layout();
