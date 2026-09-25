@@ -292,10 +292,6 @@ renderStep=function(newStep=false){
     extra:{currentQuestion:s.q,expectedAnswer:s.a,stepToken:token},
     after:()=>{if(state.phase==='recipe'&&state.drink&&currentStepV119()===s&&!state.aiBusy)renderRecipeControlsV119()}
   });
-  alexEventV388('amount_question',{ingredient:s.amount.label,servingLabel:size,unit:s.amount.unit},{
-    target:'#dialogText',phase:'amount',
-    extra:{currentQuestion:prompt,expectedAnswer:null,answerMode:null,answerParts:[],alreadyCorrectParts:[],expectedAmount:expected,amountUnit:s.amount.unit,stepToken:token}
-  })
 };
 
 showHelpOptions=function(s,message=''){
@@ -462,7 +458,11 @@ askAmount=function(s){
       if(turn.action!=='amount_answer')return;
       const n=Number(turn.amount_value);if(Number.isFinite(n)&&Math.abs(n-expected)<0.11){advanceStep(s);return}
       registerAmountWrong(s,status)
-    }catch(e){voice.cancel();console.error('Bar 1.19 amount',e);setAiBusyV119(false);status.textContent='Jag tappade uppkopplingen. Försök igen.'}
+    }catch(e){voice.cancel();console.error('Bar v3.88 amount',e);setAiBusyV119(false);status.textContent='Kunde inte nå Alex. Försök igen.'}
+  });
+  alexEventV388('amount_question',{ingredient:s.amount.label,servingLabel:size,unit:s.amount.unit},{
+    target:'#dialogText',phase:'amount',
+    extra:{currentQuestion:prompt,expectedAnswer:null,answerMode:null,answerParts:[],alreadyCorrectParts:[],expectedAmount:expected,amountUnit:s.amount.unit,stepToken:token}
   })
 };
 
