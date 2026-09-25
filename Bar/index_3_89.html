@@ -1,0 +1,340 @@
+<!doctype html>
+<html lang="sv">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<meta name="theme-color" content="#101014">
+<title>Bar Game – Version 3.89</title>
+<link rel="stylesheet" href="bar_v3_56.css">
+<style>
+/* v3.89: silent mood screen and corrected mood-selection transition. */
+#barScene.tropical{
+  background-image:url("./1789924559656.png")!important;
+  background-size:cover!important;
+  background-position:center!important;
+  background-repeat:no-repeat!important;
+}
+#highballGroup{position:absolute;display:none;pointer-events:none;user-select:none;overflow:visible}
+#drinkMojitoGroup{position:relative;display:none;width:min(46vw,190px);margin:8px auto 12px;overflow:visible;pointer-events:none;user-select:none}
+.mojitoGlassImage{position:absolute;inset:0;width:100%;height:100%;display:block;pointer-events:none;user-select:none;object-fit:contain;z-index:2}
+.mojitoContentClip{position:absolute;left:18%;right:18%;top:10%;bottom:12%;overflow:hidden;border-radius:4px 4px 9px 9px;z-index:3;pointer-events:none}
+.mojitoLiquidFill{position:absolute;left:0;right:0;bottom:0;height:0;opacity:0;transition:height .28s ease,background .28s ease,opacity .28s ease;filter:blur(.2px)}
+.mojitoMintCloud{position:absolute;left:-14%;right:-14%;bottom:-2%;display:none;background:radial-gradient(ellipse at 44% 72%,rgba(16,74,28,.98),rgba(45,112,49,.78) 48%,rgba(42,98,42,0) 80%);transition:height .28s ease,opacity .28s ease,filter .28s ease}
+.mojitoLimeSugarCloud{position:absolute;left:-12%;right:-12%;bottom:0;display:none;background:radial-gradient(ellipse at 58% 68%,rgba(126,188,73,.95),rgba(160,207,103,.72) 52%,rgba(144,197,91,0) 82%);transition:height .28s ease,opacity .28s ease,filter .28s ease}
+.mojitoBubbles{position:absolute;left:4%;right:4%;bottom:0;display:none;transition:height .28s ease,opacity .28s ease;z-index:3;overflow:hidden}
+.mojitoBubbles span{position:absolute;display:block;border-radius:50%;background:rgba(255,255,255,.92);box-shadow:0 0 1.5px rgba(255,255,255,.75);transform:translate(-50%,50%)}
+.mojitoIceLayer{position:absolute;inset:0;display:none;z-index:4;pointer-events:none}
+.mojitoIceLayer span{position:absolute;display:block;border:1px solid rgba(255,255,255,.78);border-radius:0;background:linear-gradient(135deg,rgba(255,255,255,.56),rgba(184,226,239,.24));box-shadow:inset 0 0 2px rgba(255,255,255,.58)}
+.mojitoGarnishLayer{position:absolute;inset:0;z-index:5;overflow:visible;pointer-events:none}
+#drinkStage.mojitoFinal #drinkMojitoGroup{display:block}
+#drinkStage.mojitoFinal .legacyDrinkGlass{display:none}
+#drinkMenuSprite{position:absolute;display:block;pointer-events:auto;user-select:none;object-fit:contain;cursor:pointer;touch-action:manipulation}
+
+#ingredientDebugLayer{position:absolute;inset:0;z-index:60;pointer-events:none}
+.ingredientHit{position:absolute;box-sizing:border-box;border:0;background:transparent;color:transparent;font:700 18px/1 sans-serif;text-shadow:none;display:flex;align-items:center;justify-content:center;pointer-events:auto;touch-action:manipulation}
+body.debug-mode .ingredientHit{border:3px solid rgba(255,255,255,.95);background:rgba(255,255,255,.18);color:#fff;text-shadow:0 1px 3px #000}
+.ingredientHit.upperParallelogram{clip-path:polygon(var(--slant,20px) 0,100% 0,calc(100% - var(--slant,20px)) 100%,0 100%)}
+#debugBtn.debugOn{outline:3px solid rgba(255,255,255,.9)}
+
+#drinkBookOverlay{position:absolute;inset:0;z-index:140;display:none;align-items:center;justify-content:center;padding:18px;background:rgba(7,4,2,.60);backdrop-filter:blur(2px)}
+#drinkBookOverlay.open{display:flex}
+.drinkBook{width:min(86vw,620px);max-height:82vh;overflow:auto;border:3px solid #b27a32;border-radius:20px;background:linear-gradient(180deg,#3b2416,#21140d);box-shadow:0 16px 50px rgba(0,0,0,.55),inset 0 0 28px rgba(255,188,92,.08);color:#ffe3ad;padding:18px}
+.drinkBookHead{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px}
+.drinkBookHead h2{margin:0;font-size:28px}
+.drinkClose{border:1px solid #d7a257;background:#5c351e;color:#fff4d5;border-radius:12px;width:44px;height:44px;font-size:24px;font-weight:700}
+.drinkListGrid{display:grid;grid-template-columns:1fr;gap:10px}
+.drinkChoice{width:100%;text-align:left;border:1px solid #a96f2e;background:#4b2b18;color:#fff1ce;border-radius:14px;padding:13px 15px;font-size:18px;font-weight:700}
+.drinkChoice:active{transform:scale(.99)}
+.drinkRecipe h3{font-size:27px;margin:2px 0 8px}
+.drinkRecipe h4{margin:14px 0 6px;color:#ffd38b}
+.drinkRecipe ul{margin:6px 0 10px;padding-left:22px}
+.drinkRecipe li{margin:3px 0}
+.drinkRecipe p{margin:6px 0;line-height:1.35}
+.drinkBack{margin-top:12px;border:1px solid #d09a50;background:#6a3d21;color:white;border-radius:12px;padding:10px 15px;font-weight:700}
+
+</style>
+</head>
+<body>
+<div id="toast"></div>
+<section id="startScreen" class="screen active center"><div class="card">
+<div class="version">VERSION 3.89 · DEBUG</div><h1>BAR GAME</h1><p class="lead">Blanda, muddla, skaka och smaka. Telefonen blir en del av baren.</p>
+<label>Ditt namn</label><input id="nameInput" maxlength="24" autocomplete="name" placeholder="Till exempel Ulf">
+<label>Din ålder</label><input id="ageInput" type="number" inputmode="numeric" min="1" max="120" placeholder="18">
+<label>Svårighetsgrad</label><div class="difficultySelect">
+<button type="button" class="difficultyBtn selected" data-difficulty="easy">Lätt<small>3 alternativ</small></button>
+<button type="button" class="difficultyBtn" data-difficulty="medium">Medel<small>skriv eller prata</small></button>
+<button type="button" class="difficultyBtn" data-difficulty="hard">Svår<small>även mängder</small></button></div>
+<div id="difficultyHelp" class="diffHelp">Lätt: välj mellan tre alternativ eller säg svaret.</div><div id="startError" class="error"></div>
+<div class="row"><button id="enterBtn" class="btn">Gå in i baren</button><button id="sensorBtn" class="btn secondary">Tillåt sensorer</button><button id="debugBtn" class="btn secondary" type="button" aria-pressed="false">Debug</button></div>
+<p class="small">Under 18 används bara alkoholfria recept. På iPhone kan sensorer behöva godkännas manuellt.</p></div></section>
+<section id="moodScreen" class="screen center"><div class="card wide"><div class="bartenderFace">🙂</div><h2 id="moodHello">Välkommen!</h2><p id="moodPrompt">Vilket mood är du på idag?</p><div class="moods">
+<button class="mood" data-mood="party"><b>🎉 Festligt och färgglatt</b><span>Puls, city lights och show.</span></button>
+<button class="mood" data-mood="tropical"><b>🌴 Tropiskt och avslappnat</b><span>Bambu, palmer och semester.</span></button>
+<button class="mood" data-mood="classic"><b>🥃 Lugnt och klassiskt</b><span>Mörkt trä och Manhattan-känsla.</span></button>
+<button class="mood" data-mood="elegant"><b>🍸 Elegant och exklusivt</b><span>Varm hotellbar och finare servering.</span></button>
+<button class="mood" data-mood="surprise"><b>🎲 Överraska mig</b><span>Bartendern väljer.</span></button></div></div></section>
+<section id="barScreen" class="screen"><div id="barScene" class="tropical"><div class="ambient"></div><div id="bartenderRig" class="bartenderRig" aria-hidden="true" style="visibility:hidden">
+<img class="bartenderPart torso" src="torso_fram.png">
+<img class="bartenderPart headSprite" src="head_neutral_1.png">
+<img class="bartenderPart uaL" src="upperarm_hoger.png">
+<img class="bartenderPart laL" src="lowerarm_hoger.png">
+<img class="bartenderPart hL" src="hand_hoger_relax.png">
+<img class="bartenderPart uaR" src="upperarm_hoger.png">
+<img class="bartenderPart laR" src="lowerarm_hoger.png">
+<img class="bartenderPart hR" src="hand_hoger_relax.png">
+</div><div id="ingredientDebugLayer" aria-hidden="true"></div><div id="barObjectLayer" style="visibility:hidden"><div id="whiteRumBottle" role="button" tabindex="0" aria-label="White Rum" data-spirit="white-rum"><img class="bottleBase" src="Genomskinlig%2520tom%2520glasflaska%2520i%2520glas.png"><img class="bottleLabel" src="Elegant%2520vit%2520rom-etikett%2520med%2520palmtr%C3%A4d.png"><img class="bottleCap" src="Detaljerad%2520gyllene%2520skruvkork%2520i%2520metall.png"></div><div id="highballGroup" aria-hidden="true"><div id="glassContentClip" class="mojitoContentClip"><div id="glassLiquidFill" class="mojitoLiquidFill"></div><div id="glassMintCloud" class="mojitoMintCloud"></div><div id="glassLimeSugarCloud" class="mojitoLimeSugarCloud"></div><div id="glassBubbles" class="mojitoBubbles"></div><div id="glassIceLayer" class="mojitoIceLayer"></div></div><img id="highballGlass" class="mojitoGlassImage" src="sim_highball_glas.png" alt="" aria-hidden="true"><div id="glassGarnishLayer" class="mojitoGarnishLayer"></div></div><img id="drinkMenuSprite" src="Drink_list.png" alt="Drinklista" role="button" tabindex="0" aria-label="Öppna drinklistan"></div><div class="shelf"><div class="bottles" id="bottles"></div></div><div class="bartender"><div class="head"><i class="eye left"></i><i class="eye right"></i><i class="mouth"></i></div><div class="body"><div class="apron"></div></div></div><div class="barcounter"><div class="counterItems"><div>🍋<small>Citron</small></div><div>🟢<small>Lime</small></div><div>🌿<small>Mynta</small></div><div>🧊<small>Is</small></div><div>🧂<small>Salt</small></div><div>🥄<small>Socker</small></div></div></div></div>
+<div id="drinkBookOverlay" aria-hidden="true"><div class="drinkBook" role="dialog" aria-modal="true" aria-labelledby="drinkBookTitle"><div class="drinkBookHead"><h2 id="drinkBookTitle">Drinklista</h2><button id="drinkBookClose" class="drinkClose" type="button" aria-label="Stäng drinklistan">×</button></div><div id="drinkBookContent"></div></div></div>
+<div id="orientationBanner" class="orientationBanner">↻ Vrid telefonen vågrätt för bästa barscen.<button id="tryLandscapeBtn">Försök automatiskt</button></div>
+<div class="hud"><div class="badge" id="hudPlayer">Spelare</div><div class="badge" id="hudDrink">Ingen beställning ännu</div></div><div class="dialog"><div class="dialogName">Bartendern · AI</div><div id="dialogText" class="dialogText"></div><div id="dialogControls"></div></div></section>
+<section id="actionScreen" class="screen action"><div id="rotateStage" class="actionPanel"><div class="phoneIcon">📱↻</div><h2 id="rotateTitle">Vrid telefonen till stående</h2><p id="rotateHint">Telefonen blir redskapet i nästa moment.</p><button id="startPortraitBtn" class="btn">Starta stående moment</button><p class="small">Om mobilen inte roterar automatiskt: vrid den själv.</p></div>
+<div id="muddleStage" class="actionPanel hidden"><h2>Muddla myntan</h2><p>Tryck och gnugga myntan och limen med fingret – försiktigt, inte till mos.</p><div id="muddleGlass" class="muddleGlass"><span class="leaf l1">🌿</span><span class="leaf l2">🌿</span><span class="leaf l3">🌿</span><span class="limeSlice a">🟢</span><span class="limeSlice b">🟢</span><div class="muddler"></div></div><div class="meter"><div id="muddleFill" class="meterFill"></div></div><p id="muddleStatus">0%</p><button id="muddleFallback" class="btn secondary">Simulera muddling</button></div>
+<div id="shakeStage" class="actionPanel hidden"><h2>Skaka!</h2><p>Håll telefonen stadigt och skaka som en riktig shaker.</p><div class="shaker"><div class="cap"></div><div class="cup"></div><div class="icebits">◆ ◇ ◆ ◇</div></div><div class="meter"><div id="shakeFill" class="meterFill"></div></div><p id="shakeStatus">0%</p><button id="shakeFallback" class="btn secondary">Simulera skakning</button></div>
+<div id="drinkStage" class="actionPanel hidden"><h2>Smaka</h2><p>Telefonen är glaset. För den mot munnen och luta den.</p><div id="drinkMojitoGroup" aria-hidden="true"><div id="drinkGlassContentClip" class="mojitoContentClip"><div id="drinkGlassLiquidFill" class="mojitoLiquidFill"></div><div id="drinkGlassMintCloud" class="mojitoMintCloud"></div><div id="drinkGlassLimeSugarCloud" class="mojitoLimeSugarCloud"></div><div id="drinkGlassBubbles" class="mojitoBubbles"></div><div id="drinkGlassIceLayer" class="mojitoIceLayer"></div></div><img id="drinkMojitoGlass" class="mojitoGlassImage" src="sim_highball_glas.png" alt="" aria-hidden="true"><div id="drinkGlassGarnishLayer" class="mojitoGarnishLayer"></div></div><div class="glass legacyDrinkGlass"><div id="liquid" class="liquid"></div><div class="glassIce">◇ ◇</div><div class="glassLime">◔</div></div><div class="meter"><div id="drinkFill" class="meterFill"></div></div><p id="drinkStatus">Glaset är fullt.</p><button id="drinkFallback" class="btn secondary">Simulera att du dricker</button></div>
+<div id="returnStage" class="actionPanel hidden"><div class="phoneIcon">📱↻</div><h2>Klart!</h2><p id="returnText">Vrid tillbaka till liggande läge. Spelet fortsätter automatiskt när landscape upptäcks.</p><button id="returnBarBtn" class="btn">Tillbaka till baren</button></div></section>
+<section id="resultScreen" class="screen center"><div class="card resultCard"><h2 id="resultTitle">Drink klar!</h2><div id="scoreValue" class="score">0</div><p id="resultLine"></p><div id="scoreGrid" class="scoreGrid"></div><div class="row centerRow"><button id="anotherBtn" class="btn">En till</button><button id="changeMoodBtn" class="btn secondary">Byt mood / bar</button></div></div></section>
+<script src="bar_v3_85_scene.js"></script>
+<script>
+/* v3.65 generic Debug switch + first debug feature: 8 crate zones and the large pineapple.
+   Zones use normalized source-image coordinates and are mapped through the same centered
+   background-size:cover transform as the tropical background. */
+(function(){
+  const SOURCE_W=1536, SOURCE_H=864;
+  const zones=[
+    {id:"lime",label:"Lime",x:0.018,y:0.548935,w:0.068,h:0.102639},
+    {id:"citron",label:"Citron",x:0.086,y:0.548935,w:0.067,h:0.102639},
+    {id:"apelsin",label:"Apelsin",x:0.153,y:0.548935,w:0.067,h:0.102639},
+    {id:"passionsfrukt",label:"Passionsfrukt",x:0.220,y:0.548935,w:0.076,h:0.102639},
+    {id:"mynta",label:"Mynta",x:0.000,y:0.651574,w:0.073,h:0.096},
+    {id:"basilika",label:"Basilika",x:0.073,y:0.651574,w:0.075,h:0.096},
+    {id:"timjan",label:"Timjan",x:0.148,y:0.651574,w:0.064,h:0.096},
+    {id:"chili",label:"Chili",x:0.212,y:0.651574,w:0.070,h:0.096},
+    {id:"ananas",label:"Ananas",x:-0.030,y:0.485,w:0.060,h:0.145},
+    {id:"iceCubes",label:"10",x:0.5397,y:0.6417,w:0.0659,h:0.0959},
+    {id:"crushedIce",label:"11",x:0.6056,y:0.6417,w:0.0675,h:0.0959},
+    {id:"iceFlakes",label:"12",x:0.6731,y:0.6417,w:0.0675,h:0.0959}
+  ];
+  const layer=document.getElementById("ingredientDebugLayer");
+  const scene=document.getElementById("barScene");
+  const btn=document.getElementById("debugBtn");
+  if(!layer||!scene||!btn)return;
+  const zoneAnswers={
+    lime:"Lime",citron:"Citron",apelsin:"Apelsin",passionsfrukt:"Passionsfrukt",
+    mynta:"Mynta",basilika:"Basilika",timjan:"Timjan",chili:"Chili",ananas:"Ananas",
+    iceCubes:"Isbitar",crushedIce:"Krossad is",iceFlakes:"Isflingor"
+  };
+  const ingredientTargets=["Lime","Citron","Apelsin","Passionsfrukt","Mynta","Basilika","Timjan","Chili","Ananas","Is","Isbitar","Krossad is","Isflingor"];
+  let zoneStepKey="";
+  const zoneParts=new Set();
+  function debugZoneToast(id){
+    if(!document.body.classList.contains("debug-mode"))return;
+    const t=document.getElementById("toast");
+    if(t){t.textContent="Debug: "+id;t.classList.add("show");setTimeout(()=>t.classList.remove("show"),1000)}
+  }
+  function zoneToast(msg){
+    const t=document.getElementById("toast");
+    if(t){t.textContent=msg;t.classList.add("show");setTimeout(()=>t.classList.remove("show"),1200)}
+  }
+  function syncZoneStep(){
+    const key=(typeof state!=="undefined"&&state.drink)?state.drink.id+":"+state.step:"";
+    if(key!==zoneStepKey){zoneStepKey=key;zoneParts.clear()}
+  }
+  function wrongZone(s,e,z){
+    e?.classList.add("bad");
+    setTimeout(()=>e?.classList.remove("bad"),250);
+    const attempted=zoneAnswers[z?.id]||z?.label||"Okänd ingrediens";
+    if(typeof registerWrongIngredientV388==="function")registerWrongIngredientV388(s,attempted);
+    else if(typeof registerWrongAnswer==="function")registerWrongAnswer(s,false);
+  }
+  function handleZoneAnswer(z,e){
+    debugZoneToast(z.id);
+    if(typeof state==="undefined"||state.phase!=="recipe"||!state.drink)return;
+    const s=state.drink.steps?.[state.step];
+    if(!s||typeof canon!=="function"||typeof answerKnownChoice!=="function")return;
+    syncZoneStep();
+
+    const expected=canon(s.a);
+
+    if(state.drink.id==="mojito"){
+      if(expected===canon("Mynta")){
+        if(z.id==="mynta")answerKnownChoice("Mynta",e);else wrongZone(s,e,z);
+        return;
+      }
+      if(expected===canon("Socker och limejuice")){
+        if(z.id==="lime")answerKnownChoice("Socker och limejuice",e);else wrongZone(s,e,z);
+        return;
+      }
+      if(expected===canon("Mynta och lime")){
+        if(z.id!=="mynta"&&z.id!=="lime"){wrongZone(s,e,z);return}
+        const selectedPart=z.id==="mynta"?"Mynta":"lime";
+        const sharedParts=Array.isArray(state.aiCorrectParts)?state.aiCorrectParts:[];
+        const alreadyShared=sharedParts.some(p=>canon(p)===canon(selectedPart));
+        if(!alreadyShared){
+          state.aiCorrectParts=[...sharedParts,selectedPart];
+        }
+        zoneParts.add(z.id);
+        e?.classList.add("good");
+        const hasMynta=state.aiCorrectParts.some(p=>canon(p)===canon("Mynta"));
+        const hasLime=state.aiCorrectParts.some(p=>canon(p)===canon("lime"));
+        if(hasMynta&&hasLime){
+          answerKnownChoice("Mynta och lime",e);
+        }
+        return;
+      }
+    }
+
+    let answer=zoneAnswers[z.id]||z.label;
+    if(expected===canon("Is")&&(z.id==="iceCubes"||z.id==="crushedIce"||z.id==="iceFlakes"))answer="Is";
+    const targetSet=new Set(ingredientTargets.map(canon));
+    if(targetSet.has(expected)){
+      if(canon(answer)===expected)answerKnownChoice(answer,e);else wrongZone(s,e,z);
+    }
+  }
+  const els=zones.map(z=>{
+    const e=document.createElement("button");
+    e.type="button";
+    e.className="ingredientHit"+(z.id==="lime"||z.id==="citron"||z.id==="apelsin"||z.id==="passionsfrukt"||z.id==="ananas"?" upperParallelogram":"");
+    e.dataset.ingredientZone=z.id;
+    e.textContent=z.label;
+    e.title=z.id;
+    e.setAttribute("aria-label",z.label);
+    e.addEventListener("click",()=>handleZoneAnswer(z,e));
+    layer.appendChild(e);
+    return [z,e]
+  });
+  function layout(){
+    const r=scene.getBoundingClientRect(); if(!r.width||!r.height)return;
+    const s=Math.max(r.width/SOURCE_W,r.height/SOURCE_H), rw=SOURCE_W*s,rh=SOURCE_H*s,ox=(r.width-rw)/2,oy=(r.height-rh)/2;
+    const rendered={};
+    for(const [z,e] of els){
+      let left=ox+z.x*SOURCE_W*s;
+      let top=oy+z.y*SOURCE_H*s;
+      let width=z.w*SOURCE_W*s+((z.id==="lime"||z.id==="citron"||z.id==="apelsin"||z.id==="passionsfrukt")?20:0);
+      let height=z.h*SOURCE_H*s;
+      let slant=20;
+
+      if(z.id==="citron") width-=10;
+      if(z.id==="apelsin"){left-=10;width-=5}
+      if(z.id==="passionsfrukt"){
+        const g3=rendered.apelsin;
+        if(g3) left=g3.left+g3.width-20;
+      }
+
+      if(z.id==="ananas"){
+        const g1=rendered.lime;
+        if(g1){
+          const extraTop=28;
+          top=g1.top-extraTop;
+          height=g1.height+extraTop;
+          slant=20*(height/g1.height);
+          width=(z.w*SOURCE_W*s)+30;
+          left=g1.left+slant-width;
+        }
+      }
+
+      if(z.id==="iceCubes"||z.id==="crushedIce"||z.id==="iceFlakes") height+=5;
+
+      if(z.id==="lime"||z.id==="citron"||z.id==="apelsin"||z.id==="passionsfrukt"||z.id==="ananas"){
+        e.style.setProperty("--slant",slant+"px");
+      }else{
+        e.style.removeProperty("--slant");
+      }
+
+      e.style.left=left+"px";
+      e.style.top=top+"px";
+      e.style.width=width+"px";
+      e.style.height=height+"px";
+      rendered[z.id]={left,top,width,height,slant};
+    }
+    window.__barDebug372={enabled:document.body.classList.contains("debug-mode"),sourceWidth:SOURCE_W,sourceHeight:SOURCE_H,renderScale:s,offsetX:ox,offsetY:oy,zones:zones.map(z=>({...z})),rendered};
+  }
+  btn.addEventListener("click",()=>{const on=document.body.classList.toggle("debug-mode");btn.classList.toggle("debugOn",on);btn.setAttribute("aria-pressed",String(on));layout()});
+  const barScreen=document.getElementById("barScreen");
+  if(barScreen){
+    const observer=new MutationObserver(()=>{
+      if(barScreen.classList.contains("active")){
+        requestAnimationFrame(()=>requestAnimationFrame(layout));
+      }
+    });
+    observer.observe(barScreen,{attributes:true,attributeFilter:["class"]});
+  }
+  window.addEventListener("resize",layout);
+  window.addEventListener("orientationchange",()=>setTimeout(layout,100));
+  layout();
+})();
+</script>
+<script>
+(function(){
+  const drinks=[
+    {id:"maiTai",name:"Mai Tai",ingredients:["30 ml lagrad jamaicansk rom","30 ml Martinique molasses rhum","15 ml Orange Curaçao","15 ml orgeat","30 ml färsk limejuice","7,5 ml sockerlag"],method:"Skaka alla ingredienser med is och häll i ett double rocks- eller highballglas.",garnish:"Ananas, mynta och limezest."},
+    {id:"pinaColada",name:"Piña Colada",ingredients:["50 ml vit rom","30 ml kokosgrädde","50 ml färsk ananasjuice"],method:"Mixa ingredienserna med is och häll i ett stort glas.",garnish:"Ananasskiva och cocktailkörsbär."},
+    {id:"jungleBird",name:"Jungle Bird",ingredients:["45 ml Blackstrap-rom","22,5 ml Campari","45 ml ananasjuice","15 ml färsk limejuice","15 ml demerarasockerlag"],method:"Skaka med is och sila över is i ett rocksglas.",garnish:"Ananasklyfta."},
+    {id:"ibaTiki",name:"IBA Tiki",ingredients:["30 ml Ron Profundo Havana Club","30 ml Ron Smoky Havana Club","15 ml Amaretto","5 ml Frangelico","5 droppar Maraschino Luxardo","30 ml passionsfruktspuré","90 ml färsk ananasjuice","30 ml färsk limejuice","1 tunn skiva ingefära"],method:"Muddla ingefäran, tillsätt övriga ingredienser och skaka kraftigt med is. Sila i ett kylt tikiglas fyllt med pebble ice.",garnish:"Citrus och torkad ananas."},
+    {id:"mojito",name:"Mojito",ingredients:["45 ml vit kubansk rom","20 ml färsk limejuice","6 myntakvistar","2 tsk vitt rörsocker","Sodavatten"],method:"Blanda mynta med socker och limejuice. Tillsätt lite sodavatten och fyll glaset med is. Häll i rommen och toppa med sodavatten. Rör lätt.",garnish:"Mynta och limeskiva."}
+  ];
+  const sprite=document.getElementById("drinkMenuSprite");
+  const overlay=document.getElementById("drinkBookOverlay");
+  const content=document.getElementById("drinkBookContent");
+  const closeBtn=document.getElementById("drinkBookClose");
+  if(!sprite||!overlay||!content||!closeBtn)return;
+
+  function el(tag,cls,text){
+    const node=document.createElement(tag);
+    if(cls)node.className=cls;
+    if(text!=null)node.textContent=text;
+    return node;
+  }
+  function showList(){
+    content.innerHTML="";
+    const grid=el("div","drinkListGrid");
+    drinks.forEach(d=>{
+      const b=el("button","drinkChoice",d.name);
+      b.type="button";
+      b.addEventListener("click",()=>showRecipe(d));
+      grid.appendChild(b);
+    });
+    content.appendChild(grid);
+  }
+  function showRecipe(d){
+    content.innerHTML="";
+    const wrap=el("div","drinkRecipe");
+    wrap.appendChild(el("h3","",d.name));
+    wrap.appendChild(el("h4","","Ingredienser"));
+    const ul=el("ul","");
+    d.ingredients.forEach(x=>ul.appendChild(el("li","",x)));
+    wrap.appendChild(ul);
+    wrap.appendChild(el("h4","","Gör så här"));
+    wrap.appendChild(el("p","",d.method));
+    wrap.appendChild(el("h4","","Garnering"));
+    wrap.appendChild(el("p","",d.garnish));
+    const back=el("button","drinkBack","← Till drinklistan");
+    back.type="button";
+    back.addEventListener("click",showList);
+    wrap.appendChild(back);
+    content.appendChild(wrap);
+  }
+  function openMenu(){
+    showList();
+    overlay.classList.add("open");
+    overlay.setAttribute("aria-hidden","false");
+  }
+  function closeMenu(){
+    overlay.classList.remove("open");
+    overlay.setAttribute("aria-hidden","true");
+  }
+  sprite.addEventListener("click",openMenu);
+  sprite.addEventListener("keydown",e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();openMenu()}});
+  closeBtn.addEventListener("click",closeMenu);
+  overlay.addEventListener("click",e=>{if(e.target===overlay)closeMenu()});
+  document.addEventListener("keydown",e=>{if(e.key==="Escape"&&overlay.classList.contains("open"))closeMenu()});
+  window.__drinkMenu371={drinks:drinks.map(d=>d.name),open:openMenu,close:closeMenu};
+})();
+</script>
+<script src="bar_v3_89_core.js"></script>
+<script src="bar_v3_88_actions.js"></script>
+<script src="bar_v3_85_ai_compat.js"></script>
+<script src="bar_v3_88_ai.js"></script>
+<script src="bar_v3_85_wrong_choice.js"></script>
+<script src="bar_v3_85_ui.js"></script>
+<script src="bar_v3_85_glass.js"></script>
+<script src="bar_v3_88_flow.js"></script>\n<script src="bar_v3_88_whiterum.js"></script>
+</body></html>
