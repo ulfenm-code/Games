@@ -387,7 +387,7 @@ function askAmount(_s){throw new Error('AI-lagret har inte laddats')}
   }
   function activateWhiteRumV347(){
     if(bottleBusy)return;
-    window.__barAI391?.interrupt?.();
+    window.__barAI391?.interrupt?.({resumeVoice:true});
     const step=currentRecipeStepV347();
     const correctQuestion=isWhiteRumQuestionV347(step);
     bottleBusy=true;
