@@ -28,7 +28,8 @@
  }
  function stopForInput(){
    try{
-     if(window.__barAI391?.interrupt)window.__barAI391.interrupt();
+     if(window.__barAI391?.beginTextInput)window.__barAI391.beginTextInput();
+     else if(window.__barAI391?.interrupt)window.__barAI391.interrupt();
      else{if(typeof stopIdle==='function')stopIdle();if(typeof stopSpeech==='function')stopSpeech()}
    }catch(_){}
  }
