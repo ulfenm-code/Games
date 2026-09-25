@@ -228,7 +228,7 @@ $('#enterBtn').onclick=()=>{
   show('moodScreen');
   window.__barAI388?.activity?.()
 };
-$('.mood').forEach(btn=>btn.onclick=()=>selectMood(btn.dataset.mood));
+$$('.mood').forEach(btn=>btn.onclick=()=>selectMood(btn.dataset.mood));
 
 function selectMood(mood){
   if(state.phase!=='mood')return;
