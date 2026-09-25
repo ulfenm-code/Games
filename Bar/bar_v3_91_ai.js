@@ -321,19 +321,30 @@ showHelpOptions=function(s,message=''){
   state.recipeHelpV119=true;renderRecipeControlsV119()
 };
 
-registerWrongAnswer=function(s,preserveDialog=false){
+registerWrongAnswer=function(s,preserveDialog=false,attemptedAnswer=null){
   if(!sameStepObjectV119(s))return;
   markUserActivityV388();
   state.wrong++;state.points=Math.max(0,state.points-2);state.questionFails++;state.recipeHelpV119=false;renderRecipeControlsV119();
   if(!preserveDialog){
     const token=recipeTokenV119('recipe');
-    alexEventV388('wrong_answer',{source:'choice_or_button',wrongAttempts:state.questionFails},{
+    alexEventV388('wrong_answer',{source:'choice_or_button',attemptedAnswer:String(attemptedAnswer||''),wrongAttempts:state.questionFails},{
       target:'#dialogText',phase:'recipe',
       extra:{currentQuestion:s.q,expectedAnswer:s.a,stepToken:token},
       after:()=>{if(state.phase==='recipe'&&currentStepV119()===s)scheduleIdle()}
     })
   }
 };
+function registerPartialIngredientV391(s,attemptedIngredient){
+  if(!sameStepObjectV119(s))return;
+  interruptAlexV391();
+  markUserActivityV388();
+  const token=recipeTokenV119('recipe');
+  alexEventV388('partial_ingredient',{clickedIngredient:String(attemptedIngredient||''),partial:true},{
+    target:'#dialogText',phase:'recipe',
+    extra:{currentQuestion:s.q,expectedAnswer:s.a,stepToken:token},
+    after:()=>{if(state.phase==='recipe'&&currentStepV119()===s)scheduleIdle()}
+  })
+}
 function registerWrongIngredientV388(s,attemptedIngredient){
   if(!sameStepObjectV119(s))return;
   interruptAlexV391();
@@ -351,7 +362,7 @@ answerKnownChoice=function(answer,btn){
   const s=currentStepV119();if(!s)return;
   interruptAlexV391();
   const ok=canon(answer)===canon(s.a);
-  if(!ok){btn?.classList.add('bad');registerWrongAnswer(s,true);return}
+  if(!ok){btn?.classList.add('bad');registerWrongAnswer(s,false,answer);return}
   btn?.classList.add('good');completeRecipeStep(s,true)
 };
 
@@ -500,4 +511,4 @@ $('#enterBtn')?.addEventListener('click',()=>{
 
 window.__barAI119={endpoint:BAR_AI_URL_V119,token:()=>recipeTokenV119('recipe'),session:()=>state.recipeSessionV119,previousResponseId:()=>state.aiPreviousResponseId,ttft:()=>state.aiLastTTFT,total:()=>state.aiLastTotal};
 window.__barAI388={event:alexEventV388,idle:idleAlexV388,activity:markUserActivityV388,wrongIngredient:registerWrongIngredientV388};
-window.__barAI391={interrupt:interruptAlexV391,event:alexEventV388,idle:idleAlexV388,activity:markUserActivityV388,wrongIngredient:registerWrongIngredientV388};
+window.__barAI391={interrupt:interruptAlexV391,event:alexEventV388,idle:idleAlexV388,activity:markUserActivityV388,wrongIngredient:registerWrongIngredientV388,partialIngredient:registerPartialIngredientV391};
