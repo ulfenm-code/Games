@@ -20,6 +20,7 @@ state.recipeRequestSeqV119=0;
 state.aiEventChainV388=Promise.resolve();
 state.aiInterruptEpochV391=0;
 state.aiActiveControllerV391=null;
+state.aiTextOnlyUntilIdleV391=false;
 
 function setAiBusyV119(busy,label='Alex svarar…'){
   state.aiBusy=busy;
@@ -161,7 +162,8 @@ async function callAiStreamV119(message,extra={},onReply=()=>{},allowRetry=true)
   }finally{clearTimeout(timer);if(state.aiActiveControllerV391===controller)state.aiActiveControllerV391=null}
 }
 
-function interruptAlexV391(){
+function interruptAlexV391(options={}){
+  if(options?.resumeVoice)state.aiTextOnlyUntilIdleV391=false;
   state.aiInterruptEpochV391=(state.aiInterruptEpochV391||0)+1;
   stopIdle();
   try{state.aiActiveControllerV391?.abort()}catch(_){}
@@ -169,6 +171,10 @@ function interruptAlexV391(){
   stopSpeech();
   setAiBusyV119(false);
   return state.aiInterruptEpochV391
+}
+function beginTextInputV391(){
+  state.aiTextOnlyUntilIdleV391=true;
+  return interruptAlexV391()
 }
 function markUserActivityV388(){
   state.activityEpochV388=(state.activityEpochV388||0)+1;
@@ -205,19 +211,21 @@ function alexEventV388(type,facts={},options={}){
     const phase=options.phase||state.phase;
     const target=options.target===undefined?'#dialogText':options.target;
     const extra={...(options.extra||{}),phase,gameEvent:{type,facts}};
-    setAiBusyV119(true);writeAlexTargetV388(target,'');const voice=createStreamingSpeechV119();
+    const silent=Boolean(options?.silent||state.aiTextOnlyUntilIdleV391);
+    setAiBusyV119(true);writeAlexTargetV388(target,'');const voice=silent?null:createStreamingSpeechV119();
     try{
       const data=await callAiStreamV119('',extra,(full,delta)=>{
         if(interruptEpoch!==state.aiInterruptEpochV391)return;
-        writeAlexTargetV388(target,full);voice.push(delta)
+        writeAlexTargetV388(target,full);voice?.push(delta)
       });
-      if(interruptEpoch!==state.aiInterruptEpochV391){voice.cancel();return null}
-      voice.finish();setAiBusyV119(false);const reply=data.turn?.reply||'';writeAlexTargetV388(target,reply);await voice.done;
+      if(interruptEpoch!==state.aiInterruptEpochV391){voice?.cancel();return null}
+      if(voice){voice.finish();setAiBusyV119(false)}else setAiBusyV119(false);
+      const reply=data.turn?.reply||'';writeAlexTargetV388(target,reply);if(voice)await voice.done;
       if(interruptEpoch!==state.aiInterruptEpochV391)return null;
       if(typeof options.after==='function')options.after(data);
       return data
     }catch(e){
-      voice.cancel();
+      voice?.cancel();
       if(interruptEpoch!==state.aiInterruptEpochV391)return null;
       setAiBusyV119(false);console.error('Alex game event '+type,e);
       if(target)writeAlexTargetV388(target,'Kunde inte nå bartendern. Försök igen.');
@@ -230,6 +238,7 @@ function alexEventV388(type,facts={},options={}){
 }
 function idleAlexV388(epoch){
   if(epoch!==state.activityEpochV388)return Promise.resolve(null);
+  state.aiTextOnlyUntilIdleV391=false;
   if(state.phase!=='chat'&&state.phase!=='recipe')return Promise.resolve(null);
   const s=state.phase==='recipe'?currentStepV119():null;
   const spec=s?recipeSpec(s):{mode:'single',parts:[]};
@@ -336,7 +345,7 @@ registerWrongAnswer=function(s,preserveDialog=false,attemptedAnswer=null){
 };
 function registerPartialIngredientV391(s,attemptedIngredient){
   if(!sameStepObjectV119(s))return;
-  interruptAlexV391();
+  interruptAlexV391({resumeVoice:true});
   markUserActivityV388();
   const token=recipeTokenV119('recipe');
   alexEventV388('partial_ingredient',{clickedIngredient:String(attemptedIngredient||''),partial:true},{
@@ -347,7 +356,7 @@ function registerPartialIngredientV391(s,attemptedIngredient){
 }
 function registerWrongIngredientV388(s,attemptedIngredient){
   if(!sameStepObjectV119(s))return;
-  interruptAlexV391();
+  interruptAlexV391({resumeVoice:true});
   markUserActivityV388();
   state.wrong++;state.points=Math.max(0,state.points-2);state.questionFails++;state.recipeHelpV119=false;renderRecipeControlsV119();
   const token=recipeTokenV119('recipe');
@@ -360,7 +369,7 @@ function registerWrongIngredientV388(s,attemptedIngredient){
 
 answerKnownChoice=function(answer,btn){
   const s=currentStepV119();if(!s)return;
-  interruptAlexV391();
+  interruptAlexV391({resumeVoice:true});
   const ok=canon(answer)===canon(s.a);
   if(!ok){btn?.classList.add('bad');registerWrongAnswer(s,false,answer);return}
   btn?.classList.add('good');completeRecipeStep(s,true)
@@ -511,4 +520,4 @@ $('#enterBtn')?.addEventListener('click',()=>{
 
 window.__barAI119={endpoint:BAR_AI_URL_V119,token:()=>recipeTokenV119('recipe'),session:()=>state.recipeSessionV119,previousResponseId:()=>state.aiPreviousResponseId,ttft:()=>state.aiLastTTFT,total:()=>state.aiLastTotal};
 window.__barAI388={event:alexEventV388,idle:idleAlexV388,activity:markUserActivityV388,wrongIngredient:registerWrongIngredientV388};
-window.__barAI391={interrupt:interruptAlexV391,event:alexEventV388,idle:idleAlexV388,activity:markUserActivityV388,wrongIngredient:registerWrongIngredientV388,partialIngredient:registerPartialIngredientV391};
+window.__barAI391={interrupt:interruptAlexV391,beginTextInput:beginTextInputV391,event:alexEventV388,idle:idleAlexV388,activity:markUserActivityV388,wrongIngredient:registerWrongIngredientV388,partialIngredient:registerPartialIngredientV391};
