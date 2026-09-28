@@ -1,0 +1,21 @@
+/* Bar Game v3.101 additions */
+.difficultyBtn.lockedDifficulty{position:relative;opacity:.55;filter:saturate(.55);cursor:not-allowed;padding-right:34px}
+.difficultyBtn.lockedDifficulty::after{content:"🔒";position:absolute;right:10px;top:50%;transform:translateY(-50%);font-size:20px;filter:none}
+#v31KeyboardBtn{background:#292c37!important;color:#fff!important}
+
+#maiTaiShaker{position:absolute;display:block;pointer-events:auto;cursor:pointer;touch-action:manipulation;user-select:none}
+#maiTaiShaker .shakerCupVisual{position:absolute;left:12%;right:12%;top:22%;bottom:2%;border-radius:8% 8% 24% 24%;background:linear-gradient(90deg,#636970 0%,#d9dde0 28%,#fafafa 50%,#b7bcc0 73%,#62686e 100%);box-shadow:inset 0 0 0 1px #ffffff77,0 2px 5px #0007;clip-path:polygon(8% 0,92% 0,78% 100%,22% 100%)}
+#maiTaiShaker .shakerLidVisual{position:absolute;left:22%;right:22%;top:4%;height:24%;border-radius:10% 10% 4% 4%;background:linear-gradient(90deg,#666c72,#f4f5f5 48%,#6c7278);box-shadow:inset 0 0 0 1px #ffffff66,0 2px 4px #0006;clip-path:polygon(18% 0,82% 0,100% 100%,0 100%)}
+#maiTaiShaker.lidOff .shakerLidVisual{display:none}
+#maiTaiShaker.toolSelectable{outline:0;filter:drop-shadow(0 0 5px rgba(255,255,255,.22))}
+#maiTaiShaker.toolSelectable:active{transform:scale(.96)}
+
+#shakeStage.maiTaiShake .shaker{filter:drop-shadow(0 10px 20px #0008);animation:maiTaiShakerIdle .65s ease-in-out infinite alternate}
+#shakeStage.maiTaiShake .shaker .cap{display:block}
+#shakeStage.maiTaiShake #shakeFallback{display:none!important}
+@keyframes maiTaiShakerIdle{from{transform:rotate(-4deg)}to{transform:rotate(4deg)}}
+
+.barGlassObject.glassSelectable,#highballGroup.glassSelectable{pointer-events:auto!important;cursor:pointer!important;filter:drop-shadow(0 0 6px rgba(255,255,255,.32))}
+.barGlassObject.glassSelectable:active,#highballGroup.glassSelectable:active{transform:scale(.96)}
+
+.maiTaiGarnishReady [data-ingredient-zone="mynta"],.maiTaiGarnishReady [data-ingredient-zone="ananasGarnish"]{cursor:pointer}
