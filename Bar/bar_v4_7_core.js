@@ -312,7 +312,7 @@ function orderDrink(d){
 function naturalQuestion(s){return s.q}
 function recipeInputHTML(placeholder){return `<div class="freeAnswerRow"><input id="recipeText" placeholder="${placeholder}"><button class="btn" id="recipeSend">Svara</button><button class="btn secondary" id="recipeMic">🎙️</button><div class="recipeTalkNote">Prata fritt. Spelet använder ingen lokal nyckelordsanalys av din mening.</div><div class="freeAnswerStatus" id="recipeStatus"></div></div>`}
 function renderStep(newStep=false){
-  if(window.__barCrazyGateV47?.deferIfActive?.('progression',()=>renderStep(newStep)))return;
+  if(window.__barCrazyGateV47?.deferIfActive?.('render',()=>renderStep(newStep)))return;
   if(state.step>=state.drink.steps.length){startPhysicalAction('drink','result');return}
   if(newStep){state.questionFails=0;state.amountFails=0;state.aiCorrectParts=[]}
   const s=state.drink.steps[state.step];state.lastRecipeQuestion=naturalQuestion(s);$('#dialogText').textContent='';
