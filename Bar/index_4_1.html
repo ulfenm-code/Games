@@ -479,16 +479,14 @@ body.debug-mode .ingredientHit{border:3px solid rgba(255,255,255,.95);background
     b.querySelectorAll("[id]").forEach(n=>n.removeAttribute("id"));
     return b;
   }
-  function finishRun(token,savedDialog,savedControls,total,saved){
+  function finishRun(token,savedDialog,total,saved){
     if(token!==runToken)return;
     window.__crazyFallActiveV41=false;
     overlay.classList.remove("active");
     overlay.setAttribute("aria-hidden","true");
     overlay.replaceChildren();
     const dialog=document.getElementById("dialogText");
-    const controls=document.getElementById("dialogControls");
     if(dialog)dialog.innerHTML=savedDialog;
-    if(controls)controls.innerHTML=savedControls;
     const t=document.getElementById("toast");
     if(t){
       t.textContent=saved===total?("Alla "+total+" flaskor räddade!"):("Du räddade "+saved+" av "+total+" flaskor.");
@@ -506,9 +504,7 @@ body.debug-mode .ingredientHit{border:3px solid rgba(255,255,255,.95);background
     const count=randint(4,7);
     let completed=0,saved=0;
     const dialog=document.getElementById("dialogText");
-    const controls=document.getElementById("dialogControls");
     const savedDialog=dialog?.innerHTML||"";
-    const savedControls=controls?.innerHTML||"";
     const phrase=phrases[randint(0,phrases.length-1)];
 
     overlay.replaceChildren();
@@ -530,7 +526,7 @@ body.debug-mode .ingredientHit{border:3px solid rgba(255,255,255,.95);background
         completed++;
         if(wasSaved)saved++;
       }
-      if(completed>=count)setTimeout(()=>finishRun(token,savedDialog,savedControls,count,saved),220);
+      if(completed>=count)setTimeout(()=>finishRun(token,savedDialog,count,saved),220);
     }
 
     chosen.forEach((src,i)=>{
