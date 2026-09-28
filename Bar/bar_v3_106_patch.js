@@ -626,7 +626,9 @@
     if(state.drink?.id!=='maiTai'||!state.maiTaiGarnishComplete)return;
     state.maiTaiTasteReady=true;
     setMaiTaiGlassTasteReady(true);
-    renderMaiTaiTasteControls()
+    renderMaiTaiTasteControls();
+    /* alexEvent schedules idle after its callback; cancel it on the next task. */
+    setTimeout(()=>{if(state.maiTaiTasteReady)stopIdle?.()},0)
   }
 
   function announceMaiTaiReady(){
