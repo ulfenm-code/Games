@@ -1,0 +1,54 @@
+/* Bar Game v3.102 additions */
+.difficultyBtn.lockedDifficulty{position:relative;opacity:.55;filter:saturate(.55);cursor:not-allowed;padding-right:34px}
+.difficultyBtn.lockedDifficulty::after{content:"🔒";position:absolute;right:10px;top:50%;transform:translateY(-50%);font-size:20px;filter:none}
+#v31KeyboardBtn{background:#292c37!important;color:#fff!important}
+
+/* Mai Tai shaker: always the real uploaded sprite pair. */
+#maiTaiShaker{position:absolute;display:block;pointer-events:auto;cursor:pointer;touch-action:manipulation;user-select:none;overflow:visible}
+#maiTaiShaker img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;pointer-events:none;user-select:none}
+#maiTaiShaker .shakerBaseSprite{z-index:1}
+#maiTaiShaker .shakerLidSprite{z-index:2}
+#maiTaiShaker.lidOff .shakerLidSprite{display:none}
+#maiTaiShaker.toolSelectable{outline:0;filter:drop-shadow(0 0 5px rgba(255,255,255,.22))}
+#maiTaiShaker.toolSelectable:active{filter:drop-shadow(0 0 9px rgba(255,255,255,.36))}
+
+/* Full-screen physical shake uses the same two sprites. */
+#shakeStage.maiTaiShake .shaker{position:relative;width:min(48vw,235px);height:min(48vw,235px);max-height:52vh;margin:8px auto;filter:drop-shadow(0 12px 24px #0009);animation:maiTaiShakerIdle .55s ease-in-out infinite alternate}
+#shakeStage.maiTaiShake .shaker img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;pointer-events:none;user-select:none}
+#shakeStage.maiTaiShake .shaker .shakeSpriteBase{z-index:1}
+#shakeStage.maiTaiShake .shaker .shakeSpriteLid{z-index:2}
+#shakeStage.maiTaiShake #shakeFallback{display:none!important}
+@keyframes maiTaiShakerIdle{from{transform:rotate(-5deg)}to{transform:rotate(5deg)}}
+
+/* Only the selected glass is ever shown. */
+.barGlassObject{pointer-events:none!important}
+#doubleRocksGroup.maiTaiSelectedGlass{display:block!important;pointer-events:none!important}
+
+/* Mai Tai contents sit behind the transparent Double Rocks sprite. */
+#doubleRocksGroup{overflow:visible}
+#doubleRocksGroup .maiTaiContentClip{
+  position:absolute;left:14%;right:14%;top:15%;bottom:8%;overflow:hidden;
+  clip-path:polygon(7% 0,93% 0,84% 100%,16% 100%);
+  z-index:0;pointer-events:none;
+}
+#doubleRocksGroup .maiTaiLiquid{
+  position:absolute;left:0;right:0;bottom:0;height:0%;
+  background:linear-gradient(to top,rgba(156,73,22,.94),rgba(223,127,48,.88) 52%,rgba(247,178,86,.72));
+  box-shadow:inset 0 4px 8px rgba(255,221,156,.24);
+  transition:height 2s linear;
+}
+#doubleRocksGroup .maiTaiIce{position:absolute;inset:2% 4% 4%;z-index:2;display:none;pointer-events:none}
+#doubleRocksGroup .maiTaiIce span{
+  position:absolute;width:24%;height:19%;border:1px solid rgba(231,249,255,.72);
+  background:linear-gradient(145deg,rgba(231,248,255,.45),rgba(145,210,230,.14));
+  box-shadow:inset 0 0 5px rgba(255,255,255,.45);border-radius:3px;
+}
+#doubleRocksGroup .maiTaiIce span:nth-child(1){left:7%;bottom:8%;transform:rotate(12deg)}
+#doubleRocksGroup .maiTaiIce span:nth-child(2){left:34%;bottom:4%;transform:rotate(-8deg)}
+#doubleRocksGroup .maiTaiIce span:nth-child(3){right:6%;bottom:10%;transform:rotate(16deg)}
+#doubleRocksGroup .maiTaiIce span:nth-child(4){left:17%;bottom:30%;transform:rotate(-18deg)}
+#doubleRocksGroup .maiTaiIce span:nth-child(5){right:19%;bottom:31%;transform:rotate(7deg)}
+#doubleRocksGroup .maiTaiIce span:nth-child(6){left:39%;bottom:48%;transform:rotate(14deg)}
+#doubleRocksGroup>img{z-index:3!important}
+
+.maiTaiGarnishReady [data-ingredient-zone="mynta"],.maiTaiGarnishReady [data-ingredient-zone="ananasGarnish"]{cursor:pointer}
