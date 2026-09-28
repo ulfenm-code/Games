@@ -1,0 +1,55 @@
+/* Bar Game v3.104 corrections */
+.difficultyBtn.lockedDifficulty{position:relative;opacity:.55;filter:saturate(.55);cursor:not-allowed;padding-right:34px}
+.difficultyBtn.lockedDifficulty::after{content:"🔒";position:absolute;right:10px;top:50%;transform:translateY(-50%);font-size:20px;filter:none}
+#v31KeyboardBtn{background:#292c37!important;color:#fff!important}
+
+/* Real Mai Tai shaker. Lid is a full shaker top, not a bottle cap. */
+#maiTaiShaker{position:absolute;display:block;pointer-events:auto!important;cursor:pointer;touch-action:manipulation;user-select:none;overflow:visible}
+#maiTaiShaker .shakerBaseSprite{position:absolute;left:0;top:0;width:100%;height:100%;object-fit:contain;pointer-events:none;user-select:none;z-index:1}
+#maiTaiShaker .shakerLidSprite{position:absolute;left:0;top:2%;width:100%;height:72%;object-fit:fill;pointer-events:none;user-select:none;z-index:2}
+#maiTaiShaker.lidOff .shakerLidSprite{display:none}
+#maiTaiShaker.toolSelectable{outline:0;filter:drop-shadow(0 0 5px rgba(255,255,255,.22))}
+#maiTaiShaker.toolSelectable:active{filter:drop-shadow(0 0 9px rgba(255,255,255,.36))}
+
+#shakeStage.maiTaiShake .shaker{position:relative;width:min(48vw,235px);height:min(48vw,235px);max-height:52vh;margin:8px auto;filter:drop-shadow(0 12px 24px #0009);animation:maiTaiShakerIdle .55s ease-in-out infinite alternate}
+#shakeStage.maiTaiShake .shaker .shakeSpriteBase{position:absolute;left:0;top:0;width:100%;height:100%;object-fit:contain;pointer-events:none;user-select:none;z-index:1}
+#shakeStage.maiTaiShake .shaker .shakeSpriteLid{position:absolute;left:0;top:2%;width:100%;height:72%;object-fit:fill;pointer-events:none;user-select:none;z-index:2}
+#shakeStage.maiTaiShake #shakeFallback{display:none!important}
+@keyframes maiTaiShakerIdle{from{transform:rotate(-5deg)}to{transform:rotate(5deg)}}
+
+.barGlassObject{pointer-events:none!important}
+#doubleRocksGroup.maiTaiSelectedGlass{display:block!important;pointer-events:none!important}
+
+/* Bar glass contents */
+#doubleRocksGroup{overflow:visible}
+#doubleRocksGroup>img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;z-index:2!important;pointer-events:none}
+#doubleRocksGroup .maiTaiContentClip{
+  position:absolute;left:17%;right:17%;top:20%;bottom:10%;overflow:hidden;
+  clip-path:polygon(7% 0,93% 0,84% 100%,16% 100%);z-index:4;pointer-events:none
+}
+.maiTaiLiquid{
+  position:absolute;left:0;right:0;bottom:0;height:0%;
+  background:linear-gradient(to top,rgba(145,66,18,.88),rgba(213,112,38,.78) 52%,rgba(245,167,75,.65));
+  box-shadow:inset 0 4px 8px rgba(255,224,166,.22)
+}
+.maiTaiIce{position:absolute;inset:2% 4% 4%;z-index:5;display:none;pointer-events:none}
+.maiTaiIce span{position:absolute;width:24%;height:19%;border:1px solid rgba(235,251,255,.78);background:linear-gradient(145deg,rgba(235,249,255,.42),rgba(137,203,227,.13));box-shadow:inset 0 0 5px rgba(255,255,255,.52);border-radius:3px}
+.maiTaiIce span:nth-child(1){left:7%;bottom:8%;transform:rotate(12deg)}
+.maiTaiIce span:nth-child(2){left:34%;bottom:4%;transform:rotate(-8deg)}
+.maiTaiIce span:nth-child(3){right:6%;bottom:10%;transform:rotate(16deg)}
+.maiTaiIce span:nth-child(4){left:17%;bottom:30%;transform:rotate(-18deg)}
+.maiTaiIce span:nth-child(5){right:19%;bottom:31%;transform:rotate(7deg)}
+.maiTaiIce span:nth-child(6){left:39%;bottom:48%;transform:rotate(14deg)}
+#doubleRocksGroup .maiTaiLiquid{transition:height 2s linear}
+
+/* Physical tasting must use the selected Mai Tai glass, not the legacy glass. */
+#maiTaiFinalGroup{position:relative;display:none;width:min(52vw,220px);height:calc(min(52vw,220px)*1.2495543672);margin:8px auto 12px;overflow:visible;pointer-events:none;user-select:none}
+#maiTaiFinalGroup>img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;z-index:2}
+#maiTaiFinalGroup .maiTaiFinalClip{position:absolute;left:17%;right:17%;top:20%;bottom:10%;overflow:hidden;clip-path:polygon(7% 0,93% 0,84% 100%,16% 100%);z-index:4}
+#maiTaiFinalGroup .maiTaiLiquid{height:84%;transition:height .14s linear}
+#maiTaiFinalGroup .maiTaiIce{display:block}
+#drinkStage.maiTaiFinal #maiTaiFinalGroup{display:block}
+#drinkStage.maiTaiFinal .legacyDrinkGlass{display:none!important}
+#drinkStage.maiTaiFinal #drinkMojitoGroup{display:none!important}
+
+.maiTaiGarnishReady [data-ingredient-zone="mynta"],.maiTaiGarnishReady [data-ingredient-zone="ananasGarnish"]{cursor:pointer}
