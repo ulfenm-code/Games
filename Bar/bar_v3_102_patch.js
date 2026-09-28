@@ -190,6 +190,25 @@
   const previousRenderStep=renderStep;
   renderStep=function(newStep=false){
     const s=state.drink?.steps?.[state.step];
+
+    /* Garnish introduction must be spoken exactly: lime zest first, then two choices. */
+    if(state.drink?.id==='maiTai'&&state.step===7&&s){
+      if(newStep){
+        state.questionFails=0;
+        state.amountFails=0;
+        state.aiCorrectParts=[];
+        state.recipeHelpV119=false;
+      }
+      state.lastRecipeQuestion=s.q;
+      $('#dialogControls').innerHTML='';
+      $('#dialogText').textContent=s.q;
+      if(typeof renderRecipeControlsV119==='function')renderRecipeControlsV119();
+      if(newStep&&typeof barPlayTtsV337==='function'){
+        barPlayTtsV337(s.q).catch(err=>console.error('Mai Tai limezest TTS',err));
+      }
+      return;
+    }
+
     const direct=state.drink?.id==='maiTai'&&Boolean(s?.directChoices);
     const result=previousRenderStep(newStep);
     if(direct&&typeof renderRecipeControlsV119==='function'){
