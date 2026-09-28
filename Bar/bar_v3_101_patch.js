@@ -235,7 +235,7 @@
     const b=e.target.closest?.('.drinkChoice');
     if(!b)return;
     state.recipeReads=(state.recipeReads||0)+1;
-    if(state.drink)state.points-=5;
+    if(state.drink)state.recipePenalty=(state.recipePenalty||0)+5;
     else state.pendingRecipePenalty=(state.pendingRecipePenalty||0)+5;
     toast('Recept −5 poäng');
   },true);
@@ -247,8 +247,19 @@
     setGlassCandidates(false);
     if(shaker){shaker.style.display='block';placeShakerTool()}
     const result=previousOrderDrink(d);
-    if(pending){state.points-=pending;state.pendingRecipePenalty=0}
+    state.recipePenalty=pending;
+    state.recipePenaltyApplied=false;
+    state.pendingRecipePenalty=0;
     return result;
+  };
+
+  const previousShowResult=showResult;
+  showResult=function(){
+    if(!state.recipePenaltyApplied){
+      state.points-=Number(state.recipePenalty||0);
+      state.recipePenaltyApplied=true;
+    }
+    return previousShowResult();
   };
   document.getElementById('anotherBtn')?.addEventListener('click',()=>{setGlassCandidates(false);if(shaker){shaker.style.display='block';placeShakerTool()}},true);
   document.getElementById('changeMoodBtn')?.addEventListener('click',()=>{setGlassCandidates(false);if(shaker){shaker.style.display='block';placeShakerTool()}},true);
