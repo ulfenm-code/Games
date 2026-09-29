@@ -102,19 +102,17 @@
         scene.loadConfig(HOME_URL)
       ]);
       homeCfg=home;
-      const [startPrepared,endPrepared]=await Promise.all([
-        scene.prepareConfig(startCfg),
-        scene.prepareConfig(endCfg)
-      ]);
+      const startPrepared=await scene.prepareConfig(startCfg);
+      const endFrame=rightArmFrame(startCfg,endCfg,1);
 
       /* Move the independent siphon to the bottle work position once. It stays still during the arm animation. */
       scene.applyObjectOnly('sodaSifon',endCfg.objects.sodaSifon);
       scene.renderBartenderPoseFrame(startCfg,startPrepared);
       await wait(START_HOLD_MS);
-      await animate(startCfg,endCfg,startPrepared);
-      scene.renderBartenderPoseFrame(endCfg,endPrepared);
+      await animate(startCfg,endFrame,startPrepared);
+      scene.renderBartenderPoseFrame(endFrame,startPrepared);
       await wait(POUR_HOLD_MS);
-      await animate(endCfg,startCfg,startPrepared);
+      await animate(endFrame,startCfg,startPrepared);
       scene.renderBartenderPoseFrame(startCfg,startPrepared);
       await restore(previousCfg,previousPrepared,homeCfg);
       return true
