@@ -23,8 +23,20 @@
  start().then(placeMixer).catch(e=>console.error('v4.14 mixer',e));
  window.addEventListener('resize',()=>start().then(placeMixer).catch(()=>{}));
  const flakes=document.querySelector('[data-ingredient-zone="iceFlakes"]');if(flakes){flakes.disabled=true;flakes.style.display='none';flakes.style.pointerEvents='none'}
- const menu=document.getElementById('drinkMenuSprite');menu?.addEventListener('click',e=>{const r=menu.getBoundingClientRect();if(r.width&&e.clientX<r.left+r.width*.34){e.preventDefault();e.stopImmediatePropagation()}},true);
- function hit(el,e){const r=el?.getBoundingClientRect?.();return !!r&&e.clientX>=r.left&&e.clientX<=r.right&&e.clientY>=r.top&&e.clientY<=r.bottom}
+ const menu=document.getElementById('drinkMenuSprite');
+ (function(){
+   if(!menu)return;let ctx=null,w=0,h=0;
+   function prep(){if(!(menu.naturalWidth>0&&menu.naturalHeight>0))return;const cv=document.createElement('canvas');w=cv.width=menu.naturalWidth;h=cv.height=menu.naturalHeight;ctx=cv.getContext('2d',{willReadFrequently:true});ctx.drawImage(menu,0,0,w,h)}
+   if(menu.complete)prep();else menu.addEventListener('load',prep,{once:true});
+   document.addEventListener('click',e=>{if(e.target!==menu||!ctx)return;const r=menu.getBoundingClientRect();if(!r.width||!r.height)return;const x=Math.max(0,Math.min(w-1,Math.floor((e.clientX-r.left)/r.width*w))),y=Math.max(0,Math.min(h-1,Math.floor((e.clientY-r.top)/r.height*h)));let a=255;try{a=ctx.getImageData(x,y,1,1).data[3]}catch(_){return}if(a<24){e.preventDefault();e.stopImmediatePropagation()}},true)
+ })();
+ function hit(el,e){
+   if(!el)return false;
+   const nodes=el.id==='mixerGroup414'?[el,...el.querySelectorAll('img')]:[el];
+   const rs=nodes.map(n=>n.getBoundingClientRect?.()).filter(r=>r&&r.width>0&&r.height>0);if(!rs.length)return false;
+   const box={left:Math.min(...rs.map(r=>r.left)),top:Math.min(...rs.map(r=>r.top)),right:Math.max(...rs.map(r=>r.right)),bottom:Math.max(...rs.map(r=>r.bottom))};
+   return e.clientX>=box.left&&e.clientX<=box.right&&e.clientY>=box.top&&e.clientY<=box.bottom
+ }
  function placeModel(el,p,aspect=1,yo=4){if(!el||!p)return;const s=scale(),cx=260,cy=250,w=p.w*s;el.style.left=(cx+(p.x-cx)*s)+'px';el.style.top=(cy+(p.y-cy)*s+yo)+'px';el.style.width=w+'px';el.style.height=(w*aspect)+'px';el.style.transformOrigin=(p.px??50)+'% '+(p.py??50)+'%';el.style.transform='rotate('+(p.r||0)+'deg)';el.style.zIndex=String(p.z??25);el.style.display='block';el.setAttribute('aria-hidden','false')}
  function hideGlasses(){for(const id of ['highballGroup','doubleRocksGroup','rocksGroup','tikiGroup']){const e=document.getElementById(id);if(e){e.style.display='none';e.style.pointerEvents='none';e.setAttribute('aria-hidden','true')}}}
  async function showGlass(kind){hideGlasses();if(kind==='highball'){await glassval.apply('highballGlass');const g=document.getElementById('highballGroup');g.style.display='block';g.setAttribute('aria-hidden','false');return g}const cfg=await start(),a=window.__barMaiTai3106?.glassvalAnchor||{centerX:256.33360967441587,bottomY:325.98736344742747};const key=kind==='rocks'?'rocksGlass':'tikiGlass',g=document.getElementById(kind==='rocks'?'rocksGroup':'tikiGroup'),src=cfg.objects[key],w=src.w;placeModel(g,{...src,x:a.centerX-w/2,y:a.bottomY-w*GLASS_ASPECT},GLASS_ASPECT,4);return g}
