@@ -1,5 +1,5 @@
 'use strict';
-/* Bar Game v4.14 glass: start14 reset + Mojito garnish behavior. */
+/* Bar Game v4.9 glass: start14 reset + Mojito garnish applies only highballGlass/glassSystem. */
 (function(){
   const START_CONFIG_URL='./bartender_installningar_start14.json';
   const HIGHBALL_CONFIG_URL='./bartender_installningar_glasval.json';
