@@ -112,8 +112,8 @@
    if(cur.some(x=>canon(x)===canon('Ananasskiva'))&&cur.some(x=>canon(x)===canon('Cocktailkörsbär')))answerKnownChoice('Ananasskiva och cocktailkörsbär',z)
  },true);
 
- function moveExistingGlassToDrinkStage(){return api.moveGlassToDrinkStage?.('highballGroup')}
- function restoreGlassHome(){api.restoreGlass?.('highballGroup')}
+ function moveExistingGlassToDrinkStage(){const g=api.moveGlassToDrinkStage?.('highballGroup');document.getElementById('drinkStage')?.classList.add('pinaFinal415');return g}
+ function restoreGlassHome(){api.restoreGlass?.('highballGroup');document.getElementById('drinkStage')?.classList.remove('pinaFinal415')}
 
 
  const oldStartPhysical=startPhysicalAction;
