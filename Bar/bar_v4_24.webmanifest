@@ -1,0 +1,11 @@
+{
+  "name": "Bar Game",
+  "short_name": "Bar Game",
+  "id": "./index_4_24.html",
+  "start_url": "./index_4_24.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#0a0b10",
+  "theme_color": "#101014",
+  "description": "Bar Game – blanda, muddla, skaka och smaka."
+}
