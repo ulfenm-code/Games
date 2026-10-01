@@ -889,6 +889,7 @@ body.debug-mode .ingredientHit{border:3px solid rgba(255,255,255,.95);background
           sprintUsed:false,
           shortReverseCount:0,
           mode:"cruise",
+          modeSpeedMul:1,
           modeUntil:0,
           nextDecision:0,
           reverseReturnDir:dir,
@@ -1067,7 +1068,7 @@ body.debug-mode .ingredientHit{border:3px solid rgba(255,255,255,.95);background
             b.retreating=true;
             b.mode="retreat";
             b.dir=-b.startDir;
-            b.cruiseMul=rnd(.95,1.35);
+            b.modeSpeedMul=rnd(.95,1.35);
             b.modeUntil=Infinity;
           }
 
@@ -1078,6 +1079,7 @@ body.debug-mode .ingredientHit{border:3px solid rgba(255,255,255,.95);background
             b.sprintUsed=true;
             b.mode="sprint";
             b.dir=b.startDir;
+            b.modeSpeedMul=rnd(3.2,4.8);
             b.modeUntil=now+rnd(260,580);
           }
 
@@ -1086,6 +1088,7 @@ body.debug-mode .ingredientHit{border:3px solid rgba(255,255,255,.95);background
             else b.dir=b.startDir;
             b.mode="cruise";
             b.cruiseMul=rnd(.72,1.24);
+            b.modeSpeedMul=b.cruiseMul;
             b.nextDecision=now+rnd(380,1050);
           }
 
@@ -1093,21 +1096,25 @@ body.debug-mode .ingredientHit{border:3px solid rgba(255,255,255,.95);background
             const roll=Math.random();
             if(roll<.15){
               b.mode="hover";
+              b.modeSpeedMul=0;
               b.modeUntil=now+rnd(320,900);
             }else if(roll<.34&&b.shortReverseCount<2){
               b.shortReverseCount++;
               b.mode="shortReverse";
               b.reverseReturnDir=b.startDir;
               b.dir=-b.startDir;
+              b.modeSpeedMul=rnd(1.25,2.05);
               b.modeUntil=now+rnd(220,560);
             }else if(roll<.55){
               b.mode="burst";
+              b.modeSpeedMul=rnd(1.55,2.35);
               b.modeUntil=now+rnd(300,720);
             }else if(roll<.80){
               const maxBeeY=Math.max(28,Math.min(H*.66-b.height,beeMaxTopV413));
               b.yTarget=clampV410(b.yCenter+rnd(-78,78),28,maxBeeY);
               b.ySpeed=rnd(180,330);
               b.mode="verticalJink";
+              b.modeSpeedMul=b.cruiseMul;
               b.modeUntil=now+rnd(260,620);
             }else{
               b.cruiseMul=rnd(.68,1.28);
@@ -1115,13 +1122,7 @@ body.debug-mode .ingredientHit{border:3px solid rgba(255,255,255,.95);background
             }
           }
 
-          let speedMul=b.cruiseMul;
-          if(b.mode==="hover")speedMul=0;
-          else if(b.mode==="burst")speedMul=rnd(1.55,2.35);
-          else if(b.mode==="sprint")speedMul=rnd(3.2,4.8);
-          else if(b.mode==="shortReverse")speedMul=rnd(1.25,2.05);
-          else if(b.mode==="retreat")speedMul=Math.max(1,b.cruiseMul);
-
+          const speedMul=b.mode==="cruise"?b.cruiseMul:b.modeSpeedMul;
           const speedPxSec=W*b.baseSpeedFactor*speedMul;
           b.x+=b.dir*speedPxSec*dt;
 
