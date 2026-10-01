@@ -66,7 +66,7 @@
     korsbar:'Cocktailkörsbär',
     apelsin:'Apelsinskiva'
   };
-  const CLICKABLE_ASSETS=new Set(['Lime','Citron','Apelsin','Passionsfrukt','Mynta','Ingefära','Ananasskiva','Cocktailkörsbär','Färsk ananasjuice','Is','Isbitar','Krossad is']);
+  const CLICKABLE_ASSETS=new Set(['Lime','Citron','Apelsin','Passionsfrukt','Mynta','Ingefära','Ananasskiva','Cocktailkörsbär','Färsk ananasjuice','Sodavatten','Is','Isbitar','Krossad is']);
   const CLICKABLE_GARNISH=new Set(['Mynta','Lime','Ananasskiva','Cocktailkörsbär','Apelsinskiva']);
   function normalizeFamily(v){
     const f=String(v||'').toLowerCase();
