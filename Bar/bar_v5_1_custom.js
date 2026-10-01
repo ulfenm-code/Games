@@ -295,7 +295,7 @@
       setStatus('steps','working','Spelsteg: kontrollerar hela spelordningen');
       const gameDrink=buildGameDrink(drink);
       if(!gameDrink.steps.length)throw new Error('Inga spelsteg skapades.');
-      const totalMixerMl=(drink.ingredients||[]).reduce((sum,x)=>sum+(Number(x.amount_ml)>0?Number(x.amount_ml):0),0);
+      const totalMixerMl=gameDrink.steps.reduce((sum,x)=>sum+(['bottle','ingredient','choice'].includes(x.v51Kind)&&Number(x.v51AmountMl)>0?Number(x.v51AmountMl):0),0);
       state.egenDrinkPrepared={drink,gameDrink,bottleSet,totalMixerMl};
       setStatus('steps','done','Spelsteg: '+gameDrink.steps.length+' steg klara');
       showPrepared(drink,bottleSet,gameDrink);
@@ -421,8 +421,9 @@
       if(prep==='Mixer'&&tools?.pourMixer){
         s.v51BottlePhysical=true;
         state.v51PendingMixerStep=s;
-        await tools.pourMixer(el.id,el.dataset.spirit||'v51');
-        state.v51PendingMixerStep=null
+        try{await tools.pourMixer(el.id,el.dataset.spirit||'v51')}
+        catch(err){s.v51BottlePhysical=false;throw err}
+        finally{state.v51PendingMixerStep=null}
       }else if(window.__barBottle396?.playCorrect){
         s.v51BottlePhysical=true;
         await window.__barBottle396.playCorrect(el.id,el.dataset.spirit||'v51')
@@ -449,7 +450,7 @@
   }
   function addMixerLiquid(amount,ms=800){
     const a=Math.max(0,Number(amount)||0);if(a<=0)return;
-    const target=mixerTargetLevel(a);state.egenDrinkMixerMl+=a;setMixerLevel(target,ms)
+    const target=mixerTargetLevel(a);state.egenDrinkMixerMl+=a;setMixerLevel(state.egenDrinkMixerHasIce?Math.max(76,target):target,ms)
   }
   function showMixerIce(){
     const layer=mixerIce();if(!layer)return;
@@ -567,6 +568,7 @@
     const prepared=state.egenDrinkPrepared;if(!prepared||goBtn?.disabled)return;
     state.egenDrink=true;state.egenDrinkData=prepared.drink;
     state.phase='chat';state.mood='tropical';state.bar='tropical';state.egenDrinkMixerMl=0;state.egenDrinkMixerHasIce=false;
+    barScene?.classList.add('v51CustomBar');
     show('barScreen');tryOrientation('landscape',true);
     try{if(scene?.loadAndApply)await scene.loadAndApply('./bartender_installningar_start15.json',{showGlass:true})}catch(err){console.error('v5.1 startconfig',err)}
     barScene?.classList.add('v51CustomBar');
