@@ -121,12 +121,14 @@
     const title=document.getElementById('resultTitle');
     const value=document.getElementById('scoreValue');
     const line=document.getElementById('resultLine');
+    const modeLine=document.getElementById('v510ModeLine');
     const grid=document.getElementById('scoreGrid');
     if(title)title.textContent=r.drink_name+' klar!';
     if(value)value.textContent=String(r.score);
-    if(line)line.textContent=r.is_custom
+    if(modeLine)modeLine.textContent=r.is_custom
       ? 'Spelläge: '+r.game_mode_label+' · Egen drink: '+r.drink_name
       : 'Spelläge: '+r.game_mode_label;
+    if(line)line.textContent='';
     if(grid){
       grid.innerHTML='';
       addCell(grid,r.base_score,'grundpoäng');
@@ -134,9 +136,12 @@
       addCell(grid,r.wrong,'fel');
       addCell(grid,fmtTime(r.time_seconds),'speltid');
       addCell(grid,'−'+r.recipe_penalty,'recept ('+r.recipe_reads+'×)');
-      addCell(grid,'−'+r.crazy_bottle_penalty,'flaskor · '+r.crazy_bottle_missed+' missade');
-      addCell(grid,'−'+r.crazy_bee_penalty,'bin · '+r.crazy_bee_missed+' missade');
+      if(r.game_mode==='crazy'||r.game_mode==='custom_crazy'){
+        addCell(grid,'−'+r.crazy_bottle_penalty,'flaskor · '+r.crazy_bottle_missed+' missade');
+        addCell(grid,'−'+r.crazy_bee_penalty,'bin · '+r.crazy_bee_missed+' missade');
+      }
       addCell(grid,'−'+r.time_penalty,'tidsavdrag');
+      addCell(grid,'−'+r.total_penalty,'totala avdrag');
     }
     const note=document.getElementById('v510TimeRule');
     if(note)note.textContent='Tidsavdrag börjar efter '+fmtTime(r.free_time_seconds)+' och är högst −3. Crazy Bar-tid räknas bort.'
@@ -251,6 +256,7 @@
     const style=document.createElement('style');style.id='v510ResultsStyle';
     style.textContent=[
       '.resultCard{width:min(94vw,820px)!important;max-height:92vh;overflow:auto}',
+      '#v510ModeLine{font-weight:800;margin:4px 0 8px}',
       '#v510TimeRule{font-size:12px;opacity:.72;margin:8px 0 12px}',
       '#v510ResultHighscore{margin-top:18px;text-align:left}',
       '#v510ResultHighscore h3,#v510HighscorePanel h3{margin:0 0 10px;text-align:center}',
@@ -274,8 +280,11 @@
 
     const card=document.querySelector('#resultScreen .resultCard');
     if(card&&!document.getElementById('v510TimeRule')){
+      const mode=document.createElement('div');mode.id='v510ModeLine';
       const note=document.createElement('div');note.id='v510TimeRule';
       const hs=document.createElement('div');hs.id='v510ResultHighscore';
+      const grid=card.querySelector('#scoreGrid');
+      if(grid)card.insertBefore(mode,grid);else card.appendChild(mode);
       const row=card.querySelector('.row.centerRow');
       card.insertBefore(note,row||null);card.insertBefore(hs,row||null)
     }
