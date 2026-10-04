@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Plastlabyrinten</title>
+<link rel="stylesheet" href="fpa_style_04.css">
+</head>
+<body>
+<div id="hud">Luta telefonen</div>
+<div id="hint"></div>
+<div id="tilt" class="hide">📱</div>
+<button id="mapBtn" class="hide" aria-label="Visa hela labyrinten uppifrån" title="Visa hela labyrinten (M)">🗺️</button>
+<div id="dbg" class="hide" style="position:fixed;left:16px;bottom:calc(16px + env(safe-area-inset-bottom,0px));font-family:monospace;font-size:12px;opacity:.6;white-space:pre"></div>
+
+<div class="ov" id="start">
+  <h1>Plastlabyrinten</h1>
+  <p>Du rullar bakom den runda hamstern som slår kullerbyttor genom labyrinten. Ju mer du lutar, desto fortare rullar den. Kartknappen visar hela labyrinten uppifrån.</p>
+  <button id="go">Börja</button>
+  <button class="ghost" id="nomotion">Jag har ingen lutningssensor</button>
+  <p id="diag" style="font-family:monospace;font-size:12px;opacity:.75;white-space:pre-line;max-width:34ch;text-align:left;margin-top:6px"></p>
+</div>
+<div class="ov hide" id="win">
+  <h1>I mål!</h1>
+  <p id="timeText"></p>
+  <button onclick="location.reload()">Spela igen</button>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="fpa_game_04.js"></script>
+</body>
+</html>
