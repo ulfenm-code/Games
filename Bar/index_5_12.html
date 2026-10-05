@@ -1,0 +1,1564 @@
+<!doctype html>
+<html lang="sv">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<meta name="theme-color" content="#101014">
+<link rel="manifest" href="bar_v4_26.webmanifest">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Bar Game">
+<title>Bar Game – Version 5.12</title>
+<link rel="stylesheet" href="bar_v3_100.css">
+<link rel="stylesheet" href="bar_v3_106_patch.css">
+<style>
+/* v3.96: generic bottle pour configs and selectable bottle animation target; based on v3.95. */
+#barScene.tropical{
+  background-image:url("./bakgrundsbild_5.png")!important;
+  background-size:cover!important;
+  background-position:center!important;
+  background-repeat:no-repeat!important;
+}
+#highballGroup{position:absolute;display:none;pointer-events:none;user-select:none;overflow:visible}
+#drinkMojitoGroup{position:relative;display:none;width:min(46vw,190px);margin:8px auto 12px;overflow:visible;pointer-events:none;user-select:none}
+.mojitoGlassImage{position:absolute;inset:0;width:100%;height:100%;display:block;pointer-events:none;user-select:none;object-fit:contain;z-index:2}
+.mojitoContentClip{position:absolute;left:18%;right:18%;top:10%;bottom:12%;overflow:hidden;border-radius:4px 4px 9px 9px;z-index:3;pointer-events:none}
+.mojitoLiquidFill{position:absolute;left:0;right:0;bottom:0;height:0;opacity:0;transition:height .28s ease,background .28s ease,opacity .28s ease;filter:blur(.2px)}
+.mojitoMintCloud{position:absolute;left:-14%;right:-14%;bottom:-2%;display:none;background:radial-gradient(ellipse at 44% 72%,rgba(16,74,28,.98),rgba(45,112,49,.78) 48%,rgba(42,98,42,0) 80%);transition:height .28s ease,opacity .28s ease,filter .28s ease}
+.mojitoLimeSugarCloud{position:absolute;left:-12%;right:-12%;bottom:0;display:none;background:radial-gradient(ellipse at 58% 68%,rgba(126,188,73,.95),rgba(160,207,103,.72) 52%,rgba(144,197,91,0) 82%);transition:height .28s ease,opacity .28s ease,filter .28s ease}
+.mojitoBubbles{position:absolute;left:4%;right:4%;bottom:0;display:none;transition:height .28s ease,opacity .28s ease;z-index:3;overflow:hidden}
+.mojitoBubbles span{position:absolute;display:block;border-radius:50%;background:rgba(255,255,255,.92);box-shadow:0 0 1.5px rgba(255,255,255,.75);transform:translate(-50%,50%)}
+.mojitoIceLayer{position:absolute;inset:0;display:none;z-index:4;pointer-events:none}
+.mojitoIceLayer span{position:absolute;display:block;border:1px solid rgba(255,255,255,.78);border-radius:0;background:linear-gradient(135deg,rgba(255,255,255,.56),rgba(184,226,239,.24));box-shadow:inset 0 0 2px rgba(255,255,255,.58)}
+.mojitoGarnishLayer{position:absolute;inset:0;z-index:5;overflow:visible;pointer-events:none}
+#drinkStage.mojitoFinal #drinkMojitoGroup{display:block}
+#drinkStage.mojitoFinal .legacyDrinkGlass{display:none}
+#drinkMenuSprite{position:absolute;display:block;pointer-events:auto;user-select:none;object-fit:contain;cursor:pointer;touch-action:manipulation}
+#sodaSifon{position:absolute;display:block;pointer-events:auto;user-select:none;object-fit:contain;cursor:pointer;touch-action:manipulation}
+
+#ingredientDebugLayer{position:absolute;inset:0;z-index:60;pointer-events:none}
+.ingredientHit{position:absolute;box-sizing:border-box;border:0;background:transparent;color:transparent;font:700 18px/1 sans-serif;text-shadow:none;display:flex;align-items:center;justify-content:center;pointer-events:auto;touch-action:manipulation}
+body.debug-mode .ingredientHit{border:3px solid rgba(255,255,255,.95);background:rgba(255,255,255,.18);color:#fff;text-shadow:0 1px 3px #000}
+.ingredientHit.upperParallelogram{clip-path:polygon(var(--slant,20px) 0,100% 0,calc(100% - var(--slant,20px)) 100%,0 100%)}
+#debugBtn.debugOn{outline:3px solid rgba(255,255,255,.9)}
+
+#drinkBookOverlay{position:absolute;inset:0;z-index:140;display:none;align-items:center;justify-content:center;padding:18px;background:rgba(7,4,2,.60);backdrop-filter:blur(2px)}
+#drinkBookOverlay.open{display:flex}
+.drinkBook{width:min(86vw,620px);max-height:82vh;overflow:auto;border:3px solid #b27a32;border-radius:20px;background:linear-gradient(180deg,#3b2416,#21140d);box-shadow:0 16px 50px rgba(0,0,0,.55),inset 0 0 28px rgba(255,188,92,.08);color:#ffe3ad;padding:18px}
+.drinkBookHead{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px}
+.drinkBookHead h2{margin:0;font-size:28px}
+.drinkClose{border:1px solid #d7a257;background:#5c351e;color:#fff4d5;border-radius:12px;width:44px;height:44px;font-size:24px;font-weight:700}
+.drinkListGrid{display:grid;grid-template-columns:1fr;gap:10px}
+.drinkChoice{width:100%;text-align:left;border:1px solid #a96f2e;background:#4b2b18;color:#fff1ce;border-radius:14px;padding:13px 15px;font-size:18px;font-weight:700}
+.drinkChoice:active{transform:scale(.99)}
+.drinkRecipe h3{font-size:27px;margin:2px 0 8px}
+.drinkRecipe h4{margin:14px 0 6px;color:#ffd38b}
+.drinkRecipe ul{margin:6px 0 10px;padding-left:22px}
+.drinkRecipe li{margin:3px 0}
+.drinkRecipe p{margin:6px 0;line-height:1.35}
+.drinkBack{margin-top:12px;border:1px solid #d09a50;background:#6a3d21;color:white;border-radius:12px;padding:10px 15px;font-weight:700}
+.instructionRow{display:flex;justify-content:center;margin-top:10px}
+#instructionOverlay{position:fixed;inset:0;z-index:2200;display:none;align-items:center;justify-content:center;padding:18px;background:rgba(5,6,10,.82);backdrop-filter:blur(3px)}
+#instructionOverlay.open{display:flex}
+.instructionBook{width:min(92vw,620px);max-height:86vh;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;touch-action:pan-y;background:#17191f;border:1px solid #ffffff2b;border-radius:20px;padding:20px;box-shadow:0 20px 70px #000b;color:#f5f1e8}
+.instructionBookHead{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:8px}
+.instructionBookHead h2{margin:0;font-size:30px}
+.instructionClose{border:1px solid #ffffff33;background:#2b2e37;color:white;border-radius:12px;width:44px;height:44px;font-size:24px;font-weight:700}
+.instructionBook p{line-height:1.45}
+.instructionBook ul{padding-left:22px;line-height:1.45}
+.instructionBook li{margin:8px 0}
+.instructionTip{margin-top:14px;padding:10px 12px;background:#ffffff0d;border-radius:12px}
+
+/* v4.1: start screen layout + Crazy Bar bottle-fall minigame */
+.v41UtilityRow,.v41EntryRow{display:flex;gap:9px;flex-wrap:wrap;margin-top:12px}
+.v41UtilityRow .btn,.v41EntryRow .btn{flex:1 1 0;min-width:145px}
+.crazyBarBtn{background:linear-gradient(135deg,#ffbf42,#ff5f6d);color:#171209}
+#crazyFallOverlay{position:absolute;inset:0;z-index:2100;display:none;overflow:hidden;pointer-events:auto;touch-action:none;user-select:none}
+#crazyFallOverlay.active{display:block}
+#crazyFallOverlay::before{content:"";position:absolute;inset:0;background:rgba(0,0,0,.035);pointer-events:auto}
+.crazyBottle{position:absolute!important;top:0!important;width:clamp(42px,6.3vw,72px)!important;height:clamp(112px,17vw,176px)!important;z-index:2;pointer-events:auto!important;cursor:pointer;touch-action:manipulation;transform-origin:50% 46%;will-change:transform,opacity,filter;filter:drop-shadow(0 7px 7px rgba(0,0,0,.38))}
+.crazyBottle img{pointer-events:none!important;user-select:none}
+@media(max-width:520px){.v41UtilityRow .btn,.v41EntryRow .btn{min-width:0;padding-left:10px;padding-right:10px}}
+/* v4.26 start screen + iPhone web-app UI, ported onto v4.21 baseline */
+.v422InstructionRow{display:flex;justify-content:center;margin-top:12px}
+.v422InstructionRow .btn{min-width:min(260px,100%)}
+.v422UtilityRow{display:flex;gap:9px;flex-wrap:wrap;margin-top:12px}
+.v422UtilityRow .btn{flex:1 1 0;min-width:145px}
+#startScreen.active{
+  align-items:flex-start;
+  justify-content:flex-start;
+  flex-direction:column;
+  overflow-y:auto;
+  overscroll-behavior-y:contain;
+  -webkit-overflow-scrolling:touch;
+  padding:max(14px,env(safe-area-inset-top)) max(12px,env(safe-area-inset-right)) calc(18px + env(safe-area-inset-bottom)) max(12px,env(safe-area-inset-left));
+}
+#startScreen.active>.card{flex:0 0 auto;margin:auto}
+#iphoneFullscreenBtn[hidden],#tryLandscapeBtn[hidden]{display:none!important}
+#iphoneHelpOverlay{position:fixed;inset:0;z-index:2300;display:none;align-items:flex-start;justify-content:center;overflow-y:auto;overscroll-behavior-y:contain;-webkit-overflow-scrolling:touch;padding:max(18px,env(safe-area-inset-top)) 18px calc(18px + env(safe-area-inset-bottom));background:rgba(0,0,0,.72)}
+#iphoneHelpOverlay.open{display:flex}
+.iphoneHelpCard{width:min(94vw,620px);max-height:none;overflow:visible;flex:0 0 auto;margin:auto;background:#11131a;border:1px solid #ffffff25;border-radius:20px;padding:20px;box-shadow:0 20px 70px #000b}
+.iphoneHelpCard h2{margin:0 0 10px}.iphoneHelpIntro{margin-bottom:14px}
+.iphoneHelpSteps{display:grid;gap:10px;margin:12px 0 16px}
+.iphoneHelpStep{display:grid;grid-template-columns:38px minmax(0,1fr);gap:12px;align-items:start;padding:12px;border:1px solid #ffffff18;background:#ffffff08;border-radius:16px}
+.iphoneStepNo{width:38px;height:38px;border-radius:50%;display:grid;place-items:center;background:#247cff;color:#fff;font-weight:900;font-size:20px}
+.iphoneStepText b{display:block;font-size:16px;margin-bottom:4px}.iphoneStepText small{display:block;color:#c9c6bf;font-size:12px;line-height:1.35}
+.iphoneVisual{margin-top:10px;border:1px solid #ffffff22;background:#0d0f15;border-radius:14px;padding:10px}
+.iphoneToolbarDemo{display:flex;align-items:center;justify-content:center;gap:18px;min-height:62px}
+.iphoneToolbarIcon{width:38px;height:38px;display:grid;place-items:center;color:#aeb4bf;flex:0 0 auto}
+.iphoneToolbarIcon svg{width:30px;height:30px;display:block}
+.iphoneToolbarIcon.share{width:58px;height:58px;border:4px solid #0a84ff;border-radius:15px;color:#0a84ff}
+.iphoneToolbarIcon.share svg{width:36px;height:36px}
+.iphoneToolbarIcon.book{color:#d8dbe2}
+.iphoneToolbarIcon.arrow{font-size:46px;line-height:1;font-weight:300;color:#b6bac2}
+.iphoneMenuRow,.iphoneAddDemo{display:flex;align-items:center;gap:12px;background:#f3f3f7;color:#111;border-radius:12px;padding:11px 12px;font-weight:700}
+.iphonePlusBox{width:36px;height:36px;border-radius:8px;background:#555963;color:#fff;display:grid;place-items:center;font-size:27px;font-weight:300}
+.iphoneChevron{margin-left:auto;color:#888;font-size:26px}
+.iphoneAddDemo{justify-content:space-between}.iphoneAddButton{background:#0a84ff;color:#fff;border-radius:10px;padding:9px 14px;font-weight:800}
+.iphoneHelpClose{width:100%}
+@media(max-width:430px){.iphoneHelpCard{padding:16px}.iphoneHelpStep{grid-template-columns:34px minmax(0,1fr);padding:10px}.iphoneStepNo{width:34px;height:34px;font-size:18px}}
+@media(max-width:520px){.v422UtilityRow .btn{min-width:0;padding-left:10px;padding-right:10px}}
+
+
+</style>
+</head>
+<body>
+<div id="toast"></div>
+<section id="startScreen" class="screen active center"><div class="card">
+<div class="version" id="versionLabel">VERSION 5.12</div><h1>BAR GAME</h1><p class="lead">Blanda, muddla, skaka och smaka. Telefonen blir en del av baren.</p>
+<label>Ditt namn</label><input id="nameInput" maxlength="24" autocomplete="name" placeholder="Till exempel Ulf">
+<label>Din ålder</label><input id="ageInput" type="number" inputmode="numeric" min="1" max="120" placeholder="18">
+<label>Svårighetsgrad</label><div class="difficultySelect">
+<button type="button" class="difficultyBtn lockedDifficulty" data-difficulty="easy" disabled aria-disabled="true">Lätt<small>3 alternativ</small></button>
+<button type="button" class="difficultyBtn selected" data-difficulty="medium">Medel<small>skriv eller prata</small></button>
+<button type="button" class="difficultyBtn lockedDifficulty" data-difficulty="hard" disabled aria-disabled="true">Svår<small>även mängder</small></button></div>
+<div id="difficultyHelp" class="diffHelp">Medel: svara fritt med text eller röst.</div><div id="startError" class="error"></div>
+<div class="v422InstructionRow"><button id="instructionBtn" class="btn secondary" type="button">Instruktionsbok</button></div>
+<div class="v422UtilityRow"><button id="iphoneFullscreenBtn" class="btn secondary" type="button" hidden>Helskärm på iPhone</button><button id="sensorBtn" class="btn secondary" type="button">Tillåt sensorer</button></div>
+<div class="v41EntryRow"><button id="enterBtn" class="btn">Gå in i baren</button><button id="crazyBarBtn" class="btn crazyBarBtn" type="button">Crazy Bar</button></div><div class="v51EntryRow"><button id="customDrinkBtn" class="btn secondary" type="button">Gör din egen drink</button></div>
+<p class="small">På iPhone kan sensorer behöva godkännas manuellt. För helskärmsläge på iPhone behöver spelet läggas till på hemskärmen som en webbapp.</p></div></section>
+<div id="instructionOverlay" aria-hidden="true">
+  <div class="instructionBook" role="dialog" aria-modal="true" aria-labelledby="instructionTitle">
+    <div class="instructionBookHead"><h2 id="instructionTitle">Så spelar du</h2><button id="instructionClose" class="instructionClose" type="button" aria-label="Stäng instruktionsboken">×</button></div>
+    <p>Välkommen till baren! Här blandar du drinkar tillsammans med bartendern.</p>
+    <ul>
+      <li><b>Välj stämning</b> och gå in i baren.</li>
+      <li><b>Beställ en drink</b> eller prata fritt med bartendern.</li>
+      <li><b>Svara på frågor</b> med röst, tangentbord eller genom att trycka direkt på ingredienser, glas och redskap i baren.</li>
+      <li><b>Vet du inte svaret?</b> Säg till exempel <b>”vet ej”</b> eller be bartendern om hjälp. Då visas tre svarsalternativ.</li>
+      <li><b>Blanda på riktigt:</b> skaka mobilen och luta den när du ska smaka.</li>
+      <li><b>Snabbare spel med tal eller text:</b> Om du säger eller skriver svaret går spelet snabbare. Vissa animationer som visas när du trycker direkt på flaskor, glas, ingredienser och redskap hoppas då över.</li>
+      <li><b>Drinklista:</b> På bardisken finns en drinklista. Tryck på den för att se drinkarna och läsa deras recept.</li>
+      <li><b>Recept kostar poäng:</b> Om du öppnar och tittar på ett recept under spelet får du <b>5 poängs avdrag</b>.</li>
+      <li>Gör rätt val för högre poäng. Fel kostar poäng, men du får alltid fortsätta.</li>
+    </ul>
+    <p class="instructionTip"><b>Tips:</b> Titta runt i baren. Mycket går att trycka på.</p>
+  </div>
+</div>
+<div id="iphoneHelpOverlay" aria-hidden="true">
+  <div class="iphoneHelpCard" role="dialog" aria-modal="true" aria-labelledby="iphoneHelpTitle">
+    <h2 id="iphoneHelpTitle">Helskärm på iPhone</h2>
+    <p class="iphoneHelpIntro">För helskärmsläge behöver Barspelet läggas till på hemskärmen som en webbapp.</p>
+    <div class="iphoneHelpSteps">
+      <div class="iphoneHelpStep">
+        <div class="iphoneStepNo">1</div>
+        <div class="iphoneStepText"><b>Tryck på Dela-knappen.</b><small>Den kan ligga längst ner eller uppe i webbläsaren.</small>
+          <div class="iphoneVisual"><div class="iphoneToolbarDemo" aria-hidden="true">
+            <span class="iphoneToolbarIcon arrow">‹</span>
+            <span class="iphoneToolbarIcon arrow">›</span>
+            <span class="iphoneToolbarIcon share">
+              <svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M16 20V4"></path>
+                <path d="M10.5 9.5 16 4l5.5 5.5"></path>
+                <path d="M10 13H7.5A2.5 2.5 0 0 0 5 15.5v10A2.5 2.5 0 0 0 7.5 28h17a2.5 2.5 0 0 0 2.5-2.5v-10A2.5 2.5 0 0 0 24.5 13H22"></path>
+              </svg>
+            </span>
+            <span class="iphoneToolbarIcon book">
+              <svg viewBox="0 0 34 30" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M17 7.5c-3.4-3.1-7.3-4.2-12-3.2v20.1c4.8-1 8.8.1 12 3.1z"></path>
+                <path d="M17 7.5c3.4-3.1 7.3-4.2 12-3.2v20.1c-4.8-1-8.8.1-12 3.1z"></path>
+                <path d="M17 7.5v20"></path>
+              </svg>
+            </span>
+          </div></div>
+        </div>
+      </div>
+      <div class="iphoneHelpStep">
+        <div class="iphoneStepNo">2</div>
+        <div class="iphoneStepText"><b>Välj Lägg till på hemskärmen.</b>
+          <div class="iphoneVisual"><div class="iphoneMenuRow"><span class="iphonePlusBox">＋</span><span>Lägg till på hemskärmen</span><span class="iphoneChevron">›</span></div></div>
+        </div>
+      </div>
+      <div class="iphoneHelpStep">
+        <div class="iphoneStepNo">3</div>
+        <div class="iphoneStepText"><b>Tryck Lägg till.</b><small>Starta sedan Barspelet från ikonen på hemskärmen.</small>
+          <div class="iphoneVisual"><div class="iphoneAddDemo"><span>Avbryt</span><strong>Lägg till på hemskärmen</strong><span class="iphoneAddButton">Lägg till</span></div></div>
+        </div>
+      </div>
+    </div>
+    <button id="iphoneHelpClose" class="btn secondary iphoneHelpClose" type="button">Stäng</button>
+  </div>
+</div>
+<section id="customDrinkScreen" class="screen center"><div class="card customDrinkCard"><div class="version">EGEN DRINK · VERSION 5.12</div><h2>Gör din egen drink</h2><p class="lead">Välj en officiell IBA-drink och skriv drinkens namn nedan.</p><a id="customDrinkIbaLink" class="v51IbaLink" href="https://iba-world.com/cocktails/" target="_blank" rel="noopener">Öppna IBA:s drinklista</a><label for="customDrinkName">Drinkens namn</label><div class="v51PrepRow"><input id="customDrinkName" maxlength="120" autocomplete="off" placeholder="Till exempel Margarita"><button id="customDrinkPrepare" class="btn" type="button">Förbered drinken</button></div><div id="customDrinkError" class="error"></div><div class="v51Status" aria-live="polite"><div class="v51StatusItem" data-v51-status="recipe" data-state="idle">Recept: väntar</div><div class="v51StatusItem" data-v51-status="bottles" data-state="idle">Flaskor: väntar</div><div class="v51StatusItem" data-v51-status="steps" data-state="idle">Spelsteg: väntar</div></div><div id="customDrinkPrepared" class="v51Prepared"></div><div class="v51PrepRow"><button id="customDrinkBack" class="btn secondary" type="button">Tillbaka</button></div><div class="v41EntryRow"><button id="customDrinkBar" class="btn" type="button" disabled aria-disabled="true">Gå till baren</button><button id="customDrinkCrazy" class="btn crazyBarBtn" type="button" disabled aria-disabled="true">Crazy Bar</button></div></div></section>
+<section id="moodScreen" class="screen center"><div class="card wide"><div class="bartenderFace">🙂</div><h2 id="moodHello">Välkommen!</h2><p id="moodPrompt">Välj bar</p><div class="moods">
+<button class="mood lockedBar" data-mood="party" aria-disabled="true"><b>🔒 Rooftop-baren</b><span>Kommer senare.</span></button>
+<button class="mood tikiOpen" data-mood="tropical"><b>🌴 Tiki-baren</b><span>Öppen.</span></button>
+<button class="mood lockedBar" data-mood="classic" aria-disabled="true"><b>🔒 Manhattan-baren</b><span>Kommer senare.</span></button>
+<button class="mood lockedBar" data-mood="elegant" aria-disabled="true"><b>🔒 Hotellbaren</b><span>Kommer senare.</span></button>
+<button class="mood lockedBar" data-mood="surprise" aria-disabled="true"><b>🔒 Överraska mig</b><span>Kommer senare.</span></button></div></div></section>
+<section id="barScreen" class="screen"><div id="barScene" class="tropical"><div class="ambient"></div><div id="bartenderRig" class="bartenderRig" aria-hidden="true" style="visibility:hidden">
+<img class="bartenderPart torso" src="torso_fram.png">
+<img class="bartenderPart headSprite" src="head_neutral_1.png">
+<img class="bartenderPart uaL" src="upperarm_hoger.png">
+<img class="bartenderPart laL" src="lowerarm_hoger.png">
+<img class="bartenderPart hL" src="hand_hoger_relax.png">
+<img class="bartenderPart uaR" src="upperarm_hoger.png">
+<img class="bartenderPart laR" src="lowerarm_hoger.png">
+<img class="bartenderPart hR" src="hand_hoger_relax.png">
+</div><div id="ingredientDebugLayer" aria-hidden="true"></div><div id="barObjectLayer" style="visibility:hidden"><div id="whiteRumBottle" class="spiritBottle family-rum" role="button" tabindex="0" aria-label="Vit kubansk rom" data-spirit="white-rum"><img class="bottleBase" src="Genomskinlig%2520tom%2520glasflaska%2520i%2520glas.png"><img class="bottleLabel" src="Elegant%2520vit%2520rom-etikett%2520med%2520palmtr%C3%A4d.png"><img class="bottleCap" src="Detaljerad%2520gyllene%2520skruvkork%2520i%2520metall.png"></div><div id="jamaicanRumBottle" class="spiritBottle family-rum" role="button" tabindex="0" aria-label="Lagrad jamaicansk rom" data-spirit="jamaican-rum"><img class="bottleBase" src="Genomskinlig%2520tom%2520glasflaska%2520i%2520glas.png"><img class="bottleLabel" src="etikett_lagrad_jamaicansk_rom.png"><img class="bottleCap" src="Detaljerad%2520gyllene%2520skruvkork%2520i%2520metall.png"></div><div id="martiniqueRhumBottle" class="spiritBottle family-rum" role="button" tabindex="0" aria-label="Martinique Molasses Rhum" data-spirit="martinique-rhum"><img class="bottleBase" src="Genomskinlig%2520tom%2520glasflaska%2520i%2520glas.png"><img class="bottleLabel" src="etikett_martinique_molasses_rhum.png"><img class="bottleCap" src="Detaljerad%2520gyllene%2520skruvkork%2520i%2520metall.png"></div><div id="orangeCuracaoBottle" class="spiritBottle family-liqueur" role="button" tabindex="0" aria-label="Orange Curaçao" data-spirit="orange-curacao"><img class="bottleBase" src="Liquer.png"><img class="bottleLabel" src="etikett_orange_curacao.png"></div><div id="blackstrapRumBottle" class="spiritBottle family-rum" role="button" tabindex="0" aria-label="Blackstrap-rom" data-spirit="blackstrap-rum"><img class="bottleBase" src="Genomskinlig%2520tom%2520glasflaska%2520i%2520glas.png"><img class="bottleLabel" src="etikett_blackstrap_rom.png"><img class="bottleCap" src="Detaljerad%2520gyllene%2520skruvkork%2520i%2520metall.png"></div><div id="campariBottle" class="spiritBottle family-aperitif" role="button" tabindex="0" aria-label="Campari" data-spirit="campari"><img class="bottleBase" src="Aperitif.png"><img class="bottleLabel" src="etikett_campari.png"></div><div id="ronProfundoBottle" class="spiritBottle family-rum" role="button" tabindex="0" aria-label="Ron Profundo Havana Club" data-spirit="ron-profundo"><img class="bottleBase" src="Genomskinlig%2520tom%2520glasflaska%2520i%2520glas.png"><img class="bottleLabel" src="etikett_ron_profundo_havana_club.png"><img class="bottleCap" src="Detaljerad%2520gyllene%2520skruvkork%2520i%2520metall.png"></div><div id="ronSmokyBottle" class="spiritBottle family-rum" role="button" tabindex="0" aria-label="Ron Smoky Havana Club" data-spirit="ron-smoky"><img class="bottleBase" src="Genomskinlig%2520tom%2520glasflaska%2520i%2520glas.png"><img class="bottleLabel" src="etikett_ron_smoky_havana_club.png"><img class="bottleCap" src="Detaljerad%2520gyllene%2520skruvkork%2520i%2520metall.png"></div><div id="amarettoBottle" class="spiritBottle family-liqueur" role="button" tabindex="0" aria-label="Amaretto" data-spirit="amaretto"><img class="bottleBase" src="Liquer.png"><img class="bottleLabel" src="etikett_amaretto.png"></div><div id="frangelicoBottle" class="spiritBottle family-liqueur" role="button" tabindex="0" aria-label="Frangelico" data-spirit="frangelico"><img class="bottleBase" src="Liquer.png"><img class="bottleLabel" src="etikett_frangelico.png"></div><div id="maraschinoLuxardoBottle" class="spiritBottle family-liqueur" role="button" tabindex="0" aria-label="Maraschino Luxardo" data-spirit="maraschino-luxardo"><img class="bottleBase" src="Liquer.png"><img class="bottleLabel" src="etikett_maraschino_luxardo.png"></div><img id="sodaSifon" src="SodaSifon.png" alt="Sodasifon" role="button" tabindex="0" aria-label="Sodavatten – använd sodasifon"><div id="highballGroup" aria-hidden="true"><div id="glassContentClip" class="mojitoContentClip"><div id="glassLiquidFill" class="mojitoLiquidFill"></div><div id="glassMintCloud" class="mojitoMintCloud"></div><div id="glassLimeSugarCloud" class="mojitoLimeSugarCloud"></div><div id="glassBubbles" class="mojitoBubbles"></div><div id="glassIceLayer" class="mojitoIceLayer"></div></div><img id="highballGlass" class="mojitoGlassImage" src="sim_highball_glas.png" alt="" aria-hidden="true"><div id="glassGarnishLayer" class="mojitoGarnishLayer"></div></div><div id="doubleRocksGroup" class="barGlassObject" aria-hidden="true"><img id="doubleRocksGlass" src="DoubleRocks.png" alt="" aria-hidden="true"></div><div id="rocksGroup" class="barGlassObject" aria-hidden="true"><img id="rocksGlass" src="Rocks.png" alt="" aria-hidden="true"></div><div id="tikiGroup" class="barGlassObject" aria-hidden="true"><img id="tikiGlass" src="TikiGlas.png" alt="" aria-hidden="true"></div><img id="drinkMenuSprite" src="Drink_list.png" alt="Drinklista" role="button" tabindex="0" aria-label="Öppna drinklistan"></div><div class="shelf"><div class="bottles" id="bottles"></div></div><div class="bartender"><div class="head"><i class="eye left"></i><i class="eye right"></i><i class="mouth"></i></div><div class="body"><div class="apron"></div></div></div><div class="barcounter"><div class="counterItems"><div>🍋<small>Citron</small></div><div>🟢<small>Lime</small></div><div>🌿<small>Mynta</small></div><div>🧊<small>Is</small></div><div>🧂<small>Salt</small></div><div>🥄<small>Socker</small></div></div></div></div>
+<div id="crazyFallOverlay" aria-hidden="true"></div>
+<div id="drinkBookOverlay" aria-hidden="true"><div class="drinkBook" role="dialog" aria-modal="true" aria-labelledby="drinkBookTitle"><div class="drinkBookHead"><h2 id="drinkBookTitle">Drinklista</h2><button id="drinkBookClose" class="drinkClose" type="button" aria-label="Stäng drinklistan">×</button></div><div id="drinkBookContent"></div></div></div>
+<div id="orientationBanner" class="orientationBanner"><span id="orientationText">↻ Vrid telefonen vågrätt för bästa barscen.</span><button id="tryLandscapeBtn">Försök automatiskt</button></div>
+<div class="hud"><div class="badge" id="hudPlayer">Spelare</div><div class="badge" id="hudDrink">Ingen beställning ännu</div></div><div class="dialog"><div class="dialogName">Bartendern · AI</div><div id="dialogText" class="dialogText"></div><div id="dialogControls"></div></div></section>
+<section id="actionScreen" class="screen action"><div id="rotateStage" class="actionPanel"><div class="phoneIcon">📱↻</div><h2 id="rotateTitle">Vrid telefonen till stående</h2><p id="rotateHint">Telefonen blir redskapet i nästa moment.</p><button id="startPortraitBtn" class="btn">Starta stående moment</button><p class="small">Om mobilen inte roterar automatiskt: vrid den själv.</p></div>
+<div id="muddleStage" class="actionPanel hidden"><h2>Muddla myntan</h2><p>Tryck och gnugga myntan och limen med fingret – försiktigt, inte till mos.</p><div id="muddleGlass" class="muddleGlass"><span class="leaf l1">🌿</span><span class="leaf l2">🌿</span><span class="leaf l3">🌿</span><span class="limeSlice a">🟢</span><span class="limeSlice b">🟢</span><div class="muddler"></div></div><div class="meter"><div id="muddleFill" class="meterFill"></div></div><p id="muddleStatus">0%</p><button id="muddleFallback" class="btn secondary">Simulera muddling</button></div>
+<div id="shakeStage" class="actionPanel hidden"><h2>Skaka!</h2><p>Håll telefonen stadigt och skaka som en riktig shaker.</p><div class="shaker"><div class="cap"></div><div class="cup"></div><div class="icebits">◆ ◇ ◆ ◇</div></div><div class="meter"><div id="shakeFill" class="meterFill"></div></div><p id="shakeStatus">0%</p><button id="shakeFallback" class="btn secondary">Simulera skakning</button></div>
+<div id="drinkStage" class="actionPanel hidden"><h2>Smaka</h2><p>Telefonen är glaset. För den mot munnen och luta den.</p><div id="drinkMojitoGroup" aria-hidden="true"><div id="drinkGlassContentClip" class="mojitoContentClip"><div id="drinkGlassLiquidFill" class="mojitoLiquidFill"></div><div id="drinkGlassMintCloud" class="mojitoMintCloud"></div><div id="drinkGlassLimeSugarCloud" class="mojitoLimeSugarCloud"></div><div id="drinkGlassBubbles" class="mojitoBubbles"></div><div id="drinkGlassIceLayer" class="mojitoIceLayer"></div></div><img id="drinkMojitoGlass" class="mojitoGlassImage" src="sim_highball_glas.png" alt="" aria-hidden="true"><div id="drinkGlassGarnishLayer" class="mojitoGarnishLayer"></div></div><div class="glass legacyDrinkGlass"><div id="liquid" class="liquid"></div><div class="glassIce">◇ ◇</div><div class="glassLime">◔</div></div><div class="meter"><div id="drinkFill" class="meterFill"></div></div><p id="drinkStatus">Glaset är fullt.</p><button id="drinkFallback" class="btn secondary">Simulera att du dricker</button></div>
+<div id="returnStage" class="actionPanel hidden"><div class="phoneIcon">📱↻</div><h2>Klart!</h2><p id="returnText">Vrid tillbaka till liggande läge. Spelet fortsätter automatiskt när landscape upptäcks.</p><button id="returnBarBtn" class="btn">Tillbaka till baren</button></div></section>
+<section id="resultScreen" class="screen center"><div class="card resultCard"><h2 id="resultTitle">Drink klar!</h2><div id="scoreValue" class="score">0</div><p id="resultLine"></p><div id="scoreGrid" class="scoreGrid"></div><div class="row centerRow"><button id="anotherBtn" class="btn">En till</button></div></div></section>
+<script src="bar_v4_27_scene.js"></script>
+<script src="bar_v3_103_glassval.js"></script>
+<script>
+/* v3.65 generic Debug switch + first debug feature: 8 crate zones and the large pineapple.
+   Zones use normalized source-image coordinates and are mapped through the same centered
+   background-size:cover transform as the tropical background. */
+(function(){
+  const SOURCE_W=1536, SOURCE_H=864;
+  const zones=[
+    {id:"lime",label:"Lime",x:0.018,y:0.548935,w:0.068,h:0.102639},
+    {id:"citron",label:"Citron",x:0.086,y:0.548935,w:0.067,h:0.102639},
+    {id:"apelsin",label:"Apelsin",x:0.153,y:0.548935,w:0.067,h:0.102639},
+    {id:"passionsfrukt",label:"Passionsfrukt",x:0.220,y:0.548935,w:0.076,h:0.102639},
+    {id:"mynta",label:"Mynta",x:0.000,y:0.651574,w:0.073,h:0.096},
+    {id:"ingefara",label:"Ingefära",x:0.073,y:0.651574,w:0.075,h:0.096},
+    {id:"ananasGarnish",label:"Ananas",x:0.148,y:0.651574,w:0.064,h:0.096},
+    {id:"korsbar",label:"Körsbär",x:0.212,y:0.651574,w:0.070,h:0.096},
+    {id:"ananasjuice",label:"Ananasjuice",x:-0.030,y:0.485,w:0.060,h:0.145},
+    {id:"iceCubes",label:"10",x:0.5397,y:0.6417,w:0.0659,h:0.0959},
+    {id:"crushedIce",label:"11",x:0.6056,y:0.6417,w:0.0675,h:0.0959},
+    {id:"iceFlakes",label:"12",x:0.6731,y:0.6417,w:0.0675,h:0.0959}
+  ];
+  const layer=document.getElementById("ingredientDebugLayer");
+  const scene=document.getElementById("barScene");
+  const btn=document.getElementById("debugBtn");
+  if(!layer||!scene)return;
+  const zoneAnswers={
+    lime:"Lime",citron:"Citron",apelsin:"Apelsin",passionsfrukt:"Passionsfrukt",
+    mynta:"Mynta",ingefara:"Ingefära",ananasGarnish:"Ananasskiva",korsbar:"Cocktailkörsbär",ananasjuice:"Färsk ananasjuice",
+    iceCubes:"Isbitar",crushedIce:"Krossad is",iceFlakes:"Isflingor"
+  };
+  const ingredientTargets=["Lime","Citron","Apelsin","Passionsfrukt","Mynta","Ingefära","Ananas","Ananasskiva","Torkad ananas","Körsbär","Cocktailkörsbär","Ananasjuice","Färsk ananasjuice","Is","Isbitar","Krossad is","Isflingor"];
+  let zoneStepKey="";
+  const zoneParts=new Set();
+  function debugZoneToast(id){
+    if(!document.body.classList.contains("debug-mode"))return;
+    const t=document.getElementById("toast");
+    if(t){t.textContent="Debug: "+id;t.classList.add("show");setTimeout(()=>t.classList.remove("show"),1000)}
+  }
+  function zoneToast(msg){
+    const t=document.getElementById("toast");
+    if(t){t.textContent=msg;t.classList.add("show");setTimeout(()=>t.classList.remove("show"),1200)}
+  }
+  function syncZoneStep(){
+    const key=(typeof state!=="undefined"&&state.drink)?state.drink.id+":"+state.step:"";
+    if(key!==zoneStepKey){zoneStepKey=key;zoneParts.clear()}
+  }
+  function wrongZone(s,e,z){
+    e?.classList.add("bad");
+    setTimeout(()=>e?.classList.remove("bad"),250);
+    const attempted=zoneAnswers[z?.id]||z?.label||"Okänd ingrediens";
+    if(typeof registerWrongIngredientV388==="function")registerWrongIngredientV388(s,attempted);
+    else if(typeof registerWrongAnswer==="function")registerWrongAnswer(s,false);
+  }
+  function handleZoneAnswer(z,e){
+    debugZoneToast(z.id);
+    if(typeof state==="undefined"||state.phase!=="recipe"||!state.drink)return;
+    const s=state.drink.steps?.[state.step];
+    if(!s||typeof canon!=="function"||typeof answerKnownChoice!=="function")return;
+    syncZoneStep();
+
+    const expected=canon(s.a);
+
+    if(state.drink.id==="mojito"){
+      if(expected===canon("Mynta")){
+        if(z.id==="mynta")answerKnownChoice("Mynta",e);else wrongZone(s,e,z);
+        return;
+      }
+      if(expected===canon("Socker och limejuice")){
+        if(z.id==="lime")answerKnownChoice("Socker och limejuice",e);else wrongZone(s,e,z);
+        return;
+      }
+      if(expected===canon("Mynta och lime")){
+        if(z.id!=="mynta"&&z.id!=="lime"){wrongZone(s,e,z);return}
+        const selectedPart=z.id==="mynta"?"Mynta":"lime";
+        const sharedParts=Array.isArray(state.aiCorrectParts)?state.aiCorrectParts:[];
+        const alreadyShared=sharedParts.some(p=>canon(p)===canon(selectedPart));
+        if(!alreadyShared){
+          state.aiCorrectParts=[...sharedParts,selectedPart];
+        }
+        zoneParts.add(z.id);
+        e?.classList.add("good");
+        const hasMynta=state.aiCorrectParts.some(p=>canon(p)===canon("Mynta"));
+        const hasLime=state.aiCorrectParts.some(p=>canon(p)===canon("lime"));
+        if(hasMynta&&hasLime){
+          answerKnownChoice("Mynta och lime",e);
+        }else if(typeof registerPartialIngredientV391==="function"){
+          registerPartialIngredientV391(s,selectedPart);
+        }
+        return;
+      }
+    }
+
+    let answer=zoneAnswers[z.id]||z.label;
+    if(expected===canon("Is")&&(z.id==="iceCubes"||z.id==="crushedIce"||z.id==="iceFlakes"))answer="Is";
+    if(z.id==="ananasjuice"&&(expected===canon("Ananasjuice")||expected===canon("Färsk ananasjuice")))answer=s.a;
+    if(z.id==="ananasGarnish"&&[canon("Ananas"),canon("Ananasskiva"),canon("Torkad ananas")].includes(expected))answer=s.a;
+    if(z.id==="korsbar"&&[canon("Körsbär"),canon("Cocktailkörsbär")].includes(expected))answer=s.a;
+    if(z.id==="ingefara"&&expected===canon("Ingefära"))answer=s.a;
+    const targetSet=new Set(ingredientTargets.map(canon));
+    if(targetSet.has(expected)){
+      if(canon(answer)===expected)answerKnownChoice(answer,e);else wrongZone(s,e,z);
+    }
+  }
+  const els=zones.map(z=>{
+    const e=document.createElement("button");
+    e.type="button";
+    e.className="ingredientHit"+(z.id==="lime"||z.id==="citron"||z.id==="apelsin"||z.id==="passionsfrukt"||z.id==="ananasjuice"?" upperParallelogram":"");
+    e.dataset.ingredientZone=z.id;
+    e.textContent=z.label;
+    e.title=z.id;
+    e.setAttribute("aria-label",z.label);
+    e.addEventListener("click",()=>handleZoneAnswer(z,e));
+    layer.appendChild(e);
+    return [z,e]
+  });
+  function layout(){
+    const r=scene.getBoundingClientRect(); if(!r.width||!r.height)return;
+    const s=Math.max(r.width/SOURCE_W,r.height/SOURCE_H), rw=SOURCE_W*s,rh=SOURCE_H*s,ox=(r.width-rw)/2,oy=(r.height-rh)/2;
+    const rendered={};
+    for(const [z,e] of els){
+      let left=ox+z.x*SOURCE_W*s;
+      let top=oy+z.y*SOURCE_H*s;
+      let width=z.w*SOURCE_W*s+((z.id==="lime"||z.id==="citron"||z.id==="apelsin"||z.id==="passionsfrukt")?20:0);
+      let height=z.h*SOURCE_H*s;
+      let slant=20;
+
+      if(z.id==="citron") width-=10;
+      if(z.id==="apelsin"){left-=10;width-=5}
+      if(z.id==="passionsfrukt"){
+        const g3=rendered.apelsin;
+        if(g3) left=g3.left+g3.width-20;
+      }
+
+      if(z.id==="ananasjuice"){
+        const g1=rendered.lime;
+        if(g1){
+          const extraTop=28;
+          top=g1.top-extraTop;
+          height=g1.height+extraTop;
+          slant=20*(height/g1.height);
+          width=(z.w*SOURCE_W*s)+30;
+          left=g1.left+slant-width;
+        }
+      }
+
+      if(z.id==="iceCubes"||z.id==="crushedIce"||z.id==="iceFlakes") height+=5;
+
+      if(z.id==="lime"||z.id==="citron"||z.id==="apelsin"||z.id==="passionsfrukt"||z.id==="ananasjuice"){
+        e.style.setProperty("--slant",slant+"px");
+      }else{
+        e.style.removeProperty("--slant");
+      }
+
+      e.style.left=left+"px";
+      e.style.top=top+"px";
+      e.style.width=width+"px";
+      e.style.height=height+"px";
+      rendered[z.id]={left,top,width,height,slant};
+    }
+    window.__barDebug372={enabled:document.body.classList.contains("debug-mode"),sourceWidth:SOURCE_W,sourceHeight:SOURCE_H,renderScale:s,offsetX:ox,offsetY:oy,zones:zones.map(z=>({...z})),rendered};
+  }
+  if(btn)btn.addEventListener("click",()=>{const on=document.body.classList.toggle("debug-mode");btn.classList.toggle("debugOn",on);btn.setAttribute("aria-pressed",String(on));layout()});
+  const barScreen=document.getElementById("barScreen");
+  if(barScreen){
+    const observer=new MutationObserver(()=>{
+      if(barScreen.classList.contains("active")){
+        requestAnimationFrame(()=>requestAnimationFrame(layout));
+      }
+    });
+    observer.observe(barScreen,{attributes:true,attributeFilter:["class"]});
+  }
+  window.addEventListener("resize",layout);
+  window.addEventListener("orientationchange",()=>setTimeout(layout,100));
+  layout();
+})();
+</script>
+<script>
+(function(){
+  const drinks=[
+    {id:"maiTai",name:"Mai Tai",ingredients:["30 ml lagrad jamaicansk rom","30 ml Martinique molasses rhum","15 ml Orange Curaçao","15 ml orgeat","30 ml färsk limejuice","7,5 ml sockerlag"],method:"Skaka alla ingredienser med is och häll i ett Double Rocks-glas.",garnish:"Ananasskiva och mynta. Limezest nämns av bartendern."},
+    {id:"pinaColada",name:"Piña Colada",ingredients:["50 ml vit rom","30 ml kokosgrädde","50 ml färsk ananasjuice"],method:"Mixa ingredienserna med is och häll i ett Highballglas.",garnish:"Ananasskiva och cocktailkörsbär."},
+    {id:"jungleBird",name:"Jungle Bird",ingredients:["45 ml Blackstrap-rom","22,5 ml Campari","45 ml ananasjuice","15 ml färsk limejuice","15 ml demerarasockerlag"],method:"Skaka med is och sila över is i ett rocksglas.",garnish:"Ananasskiva."},
+    {id:"ibaTiki",name:"IBA Tiki",ingredients:["30 ml Ron Profundo Havana Club","30 ml Ron Smoky Havana Club","15 ml Amaretto","5 ml Frangelico","5 droppar Maraschino Luxardo","30 ml passionsfruktspuré","90 ml färsk ananasjuice","30 ml färsk limejuice","1 tunn skiva ingefära"],method:"Muddla ingefäran, tillsätt övriga ingredienser och skaka kraftigt med is. Sila i ett kylt tikiglas fyllt med pebble ice.",garnish:"Lime och ananasskiva."},
+    {id:"mojito",name:"Mojito",ingredients:["45 ml vit kubansk rom","20 ml färsk limejuice","6 myntakvistar","2 tsk vitt rörsocker","Sodavatten"],method:"Blanda mynta med socker och limejuice i ett Highballglas. Tillsätt lite sodavatten och fyll glaset med is. Häll i rommen och toppa med sodavatten. Rör lätt.",garnish:"Mynta och limeskiva."}
+  ];
+  const sprite=document.getElementById("drinkMenuSprite");
+  const overlay=document.getElementById("drinkBookOverlay");
+  const content=document.getElementById("drinkBookContent");
+  const closeBtn=document.getElementById("drinkBookClose");
+  if(!sprite||!overlay||!content||!closeBtn)return;
+
+  function el(tag,cls,text){
+    const node=document.createElement(tag);
+    if(cls)node.className=cls;
+    if(text!=null)node.textContent=text;
+    return node;
+  }
+  function showList(){
+    content.innerHTML="";
+    const grid=el("div","drinkListGrid");
+    drinks.forEach(d=>{
+      const b=el("button","drinkChoice",d.name);
+      b.type="button";
+      b.addEventListener("click",()=>showRecipe(d));
+      grid.appendChild(b);
+    });
+    content.appendChild(grid);
+  }
+  function showRecipe(d){
+    content.innerHTML="";
+    const wrap=el("div","drinkRecipe");
+    wrap.appendChild(el("h3","",d.name));
+    wrap.appendChild(el("h4","","Ingredienser"));
+    const ul=el("ul","");
+    d.ingredients.forEach(x=>ul.appendChild(el("li","",x)));
+    wrap.appendChild(ul);
+    wrap.appendChild(el("h4","","Gör så här"));
+    wrap.appendChild(el("p","",d.method));
+    wrap.appendChild(el("h4","","Garnering"));
+    wrap.appendChild(el("p","",d.garnish));
+    const back=el("button","drinkBack","← Till drinklistan");
+    back.type="button";
+    back.addEventListener("click",showList);
+    wrap.appendChild(back);
+    content.appendChild(wrap);
+  }
+  function openMenu(){
+    showList();
+    overlay.classList.add("open");
+    overlay.setAttribute("aria-hidden","false");
+  }
+  function closeMenu(){
+    overlay.classList.remove("open");
+    overlay.setAttribute("aria-hidden","true");
+  }
+  sprite.addEventListener("click",openMenu);
+  sprite.addEventListener("keydown",e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();openMenu()}});
+  closeBtn.addEventListener("click",closeMenu);
+  overlay.addEventListener("click",e=>{if(e.target===overlay)closeMenu()});
+  document.addEventListener("keydown",e=>{if(e.key==="Escape"&&overlay.classList.contains("open"))closeMenu()});
+  window.__drinkMenu371={drinks:drinks.map(d=>d.name),open:openMenu,close:closeMenu};
+})();
+</script>
+<script>
+(function(){
+  const openBtn=document.getElementById("instructionBtn");
+  const overlay=document.getElementById("instructionOverlay");
+  const closeBtn=document.getElementById("instructionClose");
+  if(!openBtn||!overlay||!closeBtn)return;
+  function openBook(){overlay.classList.add("open");overlay.setAttribute("aria-hidden","false")}
+  function closeBook(){overlay.classList.remove("open");overlay.setAttribute("aria-hidden","true")}
+  openBtn.addEventListener("click",openBook);
+  closeBtn.addEventListener("click",closeBook);
+  overlay.addEventListener("click",e=>{if(e.target===overlay)closeBook()});
+  document.addEventListener("keydown",e=>{if(e.key==="Escape"&&overlay.classList.contains("open"))closeBook()});
+})();
+</script>
+<script src="bar_v4_20_core.js"></script>
+<script src="bar_v4_21_actions.js"></script>
+<script src="bar_v3_85_ai_compat.js"></script>
+<script src="bar_v4_30_ai.js"></script>
+<script src="bar_v3_95_ui.js"></script>
+<script src="bar_v5_12_glass.js"></script>
+<script src="bar_v3_98_garnish.js"></script>
+<script src="bar_v4_7_flow.js"></script>
+<script src="bar_v4_30_bottles.js"></script>
+<script src="bar_v4_27_soda.js"></script>
+<script src="bar_v5_10_patch.js"></script>
+<script src="bar_v4_29_tools.js"></script>
+<script src="bar_v4_17_garnish.js"></script>
+<script src="bar_v4_27_pina.js"></script>
+<script src="bar_v4_20_jungle.js"></script>
+<script src="bar_v4_17_iba.js"></script>
+<script src="bar_v4_18_input.js"></script>
+<script src="bar_v4_27_glassclick.js"></script>
+<script src="bar_v4_30_glassfix.js"></script>
+<script src="bar_v4_26_ios.js"></script>
+
+<script>
+/* v4.8 Crazy Bar: v4.7 policy/gate plus persistent AI-continuation recovery after Crazy interrupts. */
+(function(){
+  const enterBtn=document.getElementById("enterBtn");
+  const crazyBtn=document.getElementById("crazyBarBtn");
+  const barScreen=document.getElementById("barScreen");
+  const overlay=document.getElementById("crazyFallOverlay");
+  if(!enterBtn||!crazyBtn||!barScreen||!overlay)return;
+
+  window.__crazyBarModeV41=false;
+  window.__crazyFallActiveV41=false;
+  window.__crazyBeeActiveV410=false;
+  window.__crazySequenceActiveV47=false;
+
+  const validModes=new Set(["allow","block","standard"]);
+  const actionPolicy={shake:"block"};
+  const animationPolicy={pour:"allow"};
+  const deferred=new Map();
+
+  function normalizeMode(v){return validModes.has(v)?v:null}
+  function currentCrazyMode(){
+    const action=(typeof state!=="undefined"&&state.phase==="action")?state.action:null;
+    const actionMode=normalizeMode(actionPolicy[action]);
+    if(actionMode)return actionMode;
+
+    const step=(typeof state!=="undefined"&&state.drink)?state.drink.steps?.[state.step]:null;
+    const explicit=normalizeMode(step?.crazyMode??step?.crazy);
+    if(explicit)return explicit;
+
+    try{
+      if(window.__barBottle396?.busy?.())return normalizeMode(animationPolicy.pour)||"standard";
+    }catch(_){}
+    return "standard";
+  }
+  function deferIfActive(key,fn){
+    if(!window.__crazySequenceActiveV47)return false;
+    const k=String(key||"progression");
+    deferred.set(k,fn);
+    return true;
+  }
+  function releaseDeferred(){
+    if(window.__crazySequenceActiveV47)return 0;
+    const progression=deferred.get("progression");
+    const render=deferred.get("render");
+    const others=[...deferred.entries()].filter(([k])=>k!=="progression"&&k!=="render").map(([,fn])=>fn);
+    deferred.clear();
+    let ran=0;
+    const jobs=progression?[progression,...others]:(render?[render,...others]:others);
+    for(const fn of jobs){
+      try{fn();ran++}catch(e){console.error("Crazy deferred progression",e)}
+    }
+    return ran;
+  }
+  function clearDeferred(){deferred.clear()}
+
+  window.__barCrazyPolicyV47={
+    modes:["allow","block","standard"],
+    actionPolicy,
+    animationPolicy,
+    current:currentCrazyMode,
+    setAction(type,mode){const m=normalizeMode(mode);if(m)actionPolicy[type]=m},
+    setAnimation(type,mode){const m=normalizeMode(mode);if(m)animationPolicy[type]=m}
+  };
+  window.__barCrazyGateV47={
+    deferIfActive,
+    release:releaseDeferred,
+    clear:clearDeferred,
+    get active(){return !!window.__crazySequenceActiveV47},
+    get pending(){return deferred.size}
+  };
+
+  const originalEnter=enterBtn.onclick;
+  enterBtn.onclick=function(ev){
+    if(!window.__v41CrazyDispatch)window.__crazyBarModeV41=false;
+    return originalEnter?.call(this,ev);
+  };
+  crazyBtn.onclick=function(){
+    window.__crazyBarModeV41=true;
+    lastCrazyTypeV413=null;
+    crazyStreakV413=0;
+    window.__v41CrazyDispatch=true;
+    try{enterBtn.click()}finally{window.__v41CrazyDispatch=false}
+  };
+
+  const bottleIds=[
+    "whiteRumBottle","jamaicanRumBottle","martiniqueRhumBottle","orangeCuracaoBottle",
+    "blackstrapRumBottle","campariBottle","ronProfundoBottle","ronSmokyBottle",
+    "amarettoBottle","frangelicoBottle","maraschinoLuxardoBottle"
+  ];
+  let nextTimer=null;
+  let warningTimer=null;
+  let prestartTimer=null;
+  let runToken=0;
+  let lastCrazyTypeV413=null;
+  let crazyStreakV413=0;
+  let beeRafV410=0;
+  let beeFinishTimerV410=null;
+  let beePrestartTimerV411=null;
+  let beeAimPointerV410=null;
+  let beeSodaRestoreV411=null;
+  let beeScoreStartV510=0;
+  let beeScorePendingV510=null;
+  let bottleScoreStartV510=0;
+  let bottleScorePendingV510=null;
+  function emitCrazyScoreV510(kind,pending,startedAt){
+    if(!pending||!startedAt)return;
+    document.dispatchEvent(new CustomEvent("barcrazyresult",{detail:{
+      kind,
+      total:Number(pending.total)||0,
+      missed:Number(pending.missed)||0,
+      durationMs:Math.max(0,performance.now()-startedAt)
+    }}));
+  }
+  const beeConfigPromiseV410=fetch("./bartender_installningar_biCrazyGame.json",{cache:"no-store"})
+    .then(r=>{if(!r.ok)throw new Error("HTTP "+r.status);return r.json()});
+
+  (function installBeeStylesV410(){
+    if(document.getElementById("crazyBeeStylesV410"))return;
+    const style=document.createElement("style");
+    style.id="crazyBeeStylesV410";
+    style.textContent=`
+      #crazyFallOverlay.beeGameV410{background:rgba(0,0,0,.025)}
+      #crazyFallOverlay.beeGameV410::before{background:rgba(0,0,0,.02)}
+      .crazyBeeV410{position:absolute;pointer-events:none;user-select:none;will-change:transform;z-index:2135;filter:drop-shadow(0 5px 5px rgba(0,0,0,.32))}
+      .crazyPipeV410{position:absolute;pointer-events:none;user-select:none;z-index:2148;will-change:transform;filter:drop-shadow(0 5px 7px rgba(0,0,0,.42))}
+      .crazyAimPadV410{position:absolute;left:max(16px,3vw);bottom:max(18px,4vh);width:clamp(104px,16vw,150px);height:clamp(104px,16vw,150px);border-radius:50%;z-index:2155;pointer-events:auto;touch-action:none;background:rgba(12,14,20,.58);border:2px solid rgba(255,255,255,.46);box-shadow:inset 0 0 20px rgba(255,255,255,.05)}
+      .crazyAimPadV410::before{content:"↔";position:absolute;inset:0;display:grid;place-items:center;color:rgba(255,255,255,.6);font-size:32px;font-weight:900}
+      .crazyAimKnobV410{position:absolute;left:50%;top:50%;width:42%;height:42%;border-radius:50%;transform:translate(-50%,-50%);background:rgba(255,255,255,.82);border:2px solid rgba(0,0,0,.35);box-shadow:0 4px 12px rgba(0,0,0,.42);pointer-events:none}
+      .crazyFireBtnV410{position:absolute;right:max(16px,3vw);bottom:max(24px,5vh);width:clamp(94px,14vw,132px);height:clamp(94px,14vw,132px);border-radius:50%;z-index:2156;pointer-events:auto;touch-action:none;border:3px solid rgba(255,255,255,.74);background:radial-gradient(circle at 38% 32%,#a7f0ff,#47b9de 50%,#16779f);color:#07161d;font-weight:1000;font-size:clamp(15px,2.5vw,22px);box-shadow:0 7px 18px rgba(0,0,0,.48);user-select:none}
+      .crazyFireBtnV410:active{transform:scale(.94)}
+      .crazyBeeHudV410{position:absolute;left:50%;top:12px;transform:translateX(-50%);z-index:2157;padding:7px 13px;border-radius:999px;background:rgba(8,10,15,.72);border:1px solid rgba(255,255,255,.3);color:white;font-weight:900;font-size:14px;pointer-events:none}
+      .crazySprayV410{position:absolute;height:9px;z-index:2146;transform-origin:0 50%;pointer-events:none;border-radius:999px;background:linear-gradient(90deg,rgba(238,252,255,.98),rgba(159,229,255,.88) 44%,rgba(255,255,255,.46));box-shadow:0 0 8px rgba(189,238,255,.9),0 0 18px rgba(93,200,239,.55);will-change:transform,opacity}
+      .crazySprayDropV410{position:absolute;width:7px;height:7px;border-radius:50%;background:rgba(218,247,255,.9);box-shadow:0 0 5px rgba(159,226,255,.9);z-index:2147;pointer-events:none}
+    `;
+    document.head.appendChild(style);
+  })();
+
+  function rnd(a,b){return a+Math.random()*(b-a)}
+  function randint(a,b){return Math.floor(rnd(a,b+1))}
+  function shuffle(a){
+    for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}
+    return a
+  }
+  function stopWarningVibration(){
+    clearTimeout(warningTimer);warningTimer=null;
+    try{navigator.vibrate?.(0)}catch(_){}
+  }
+  function startWarningVibration(token){
+    stopWarningVibration();
+    const pulse=()=>{
+      if(token!==runToken||!window.__crazySequenceActiveV47)return;
+      try{navigator.vibrate?.([150,90,150])}catch(_){}
+      warningTimer=setTimeout(pulse,620);
+    };
+    pulse();
+  }
+  function canRun(){
+    return window.__crazyBarModeV41 &&
+      barScreen.classList.contains("active") &&
+      !window.__crazySequenceActiveV47 &&
+      currentCrazyMode()!=="block" &&
+      !document.getElementById("drinkBookOverlay")?.classList.contains("open") &&
+      !document.getElementById("instructionOverlay")?.classList.contains("open");
+  }
+  function scheduleNext(first=false){
+    clearTimeout(nextTimer);
+    if(!window.__crazyBarModeV41)return;
+    const delay=first?rnd(10000,16000):rnd(24000,36000);
+    nextTimer=setTimeout(()=>{
+      nextTimer=null;
+      if(canRun())startNextCrazyV410();
+      else if(window.__crazyBarModeV41)nextTimer=setTimeout(()=>{nextTimer=null;scheduleNext(false)},3500);
+    },delay);
+  }
+
+  function scaleV410(){return window.__barScale359?.finalGameFactor||1}
+  function clampV410(v,a,b){return Math.max(a,Math.min(b,v))}
+  function selectedBeeConfigV410(cfg){
+    const bw=Number(cfg?.objects?.bi?.w);
+    const p=cfg?.objects?.pip;
+    const pipe=p?{
+      x:Number(p.x),y:Number(p.y),w:Number(p.w),
+      px:Number(p.px),py:Number(p.py),r:Number(p.r)
+    }:null;
+    if(!Number.isFinite(bw)||!pipe||Object.values(pipe).some(v=>!Number.isFinite(v))){
+      throw new Error("Ogiltig biCrazyGame-config");
+    }
+    return {beeW:bw,pipe};
+  }
+  function stopBeeLoopV410(){
+    if(beeRafV410){cancelAnimationFrame(beeRafV410);beeRafV410=0}
+    clearTimeout(beeFinishTimerV410);beeFinishTimerV410=null;
+    clearTimeout(beePrestartTimerV411);beePrestartTimerV411=null;
+    beeAimPointerV410=null;
+  }
+  function hideBeeSodaV411(){
+    const soda=document.getElementById("sodaSifon");
+    if(!soda)return;
+    if(!beeSodaRestoreV411)beeSodaRestoreV411={
+      display:soda.style.display,
+      visibility:soda.style.visibility,
+      pointerEvents:soda.style.pointerEvents
+    };
+    soda.style.visibility="hidden";
+    soda.style.pointerEvents="none";
+  }
+  function restoreBeeSodaV411(){
+    const soda=document.getElementById("sodaSifon");
+    if(!soda||!beeSodaRestoreV411)return;
+    soda.style.display=beeSodaRestoreV411.display;
+    soda.style.visibility=beeSodaRestoreV411.visibility;
+    soda.style.pointerEvents=beeSodaRestoreV411.pointerEvents;
+    beeSodaRestoreV411=null;
+  }
+  function finalizeBeeSequenceV411(savedDialog){
+    emitCrazyScoreV510("bees",beeScorePendingV510,beeScoreStartV510);
+    beeScorePendingV510=null;
+    beeScoreStartV510=0;
+    window.__crazySequenceActiveV47=false;
+    let aiResumed=false;
+    try{aiResumed=Boolean(window.__barAI48?.resumeContinuation?.())}catch(e){console.error("Crazy bee AI continuation resume",e)}
+    const released=window.__barCrazyGateV47?.release?.()||0;
+    if(!aiResumed&&!released){
+      const dialog=document.getElementById("dialogText");
+      if(dialog)dialog.innerHTML=savedDialog;
+    }
+    scheduleNext(false);
+  }
+  function finishBeeGameV410(token,savedDialog,total,hits){
+    if(token!==runToken)return;
+    stopBeeLoopV410();
+    overlay.classList.remove("beeGameV410");
+    overlay.classList.remove("active");
+    overlay.setAttribute("aria-hidden","true");
+    overlay.replaceChildren();
+    restoreBeeSodaV411();
+    window.__crazyBeeActiveV410=false;
+    const missed=Math.max(0,total-hits);
+    beeScorePendingV510={total,hits,missed};
+    const pct=total?Math.round(hits*100/total):0;
+    const t=document.getElementById("toast");
+    if(t){
+      t.textContent="Du träffade "+hits+" av "+total+" bin.";
+      t.classList.add("show");
+      setTimeout(()=>t.classList.remove("show"),1700);
+    }
+    let finalized=false;
+    const done=()=>{if(finalized)return;finalized=true;finalizeBeeSequenceV411(savedDialog)};
+    const facts={
+      mode:"crazy_bar",
+      total_bees:total,
+      hit_bees:hits,
+      missed_bees:missed,
+      hit_percent:pct,
+      instruction:"Kommentera resultatet direkt som Alex i högst två korta meningar. Reagera naturligt på hur många bin spelaren träffade respektive missade. Var rapp, varm och gärna torrhumoristisk. Ställ ingen fråga och återgå inte till receptet i samma replik."
+    };
+    const p=window.__barAI48?.priorityEvent?.("crazy_bee_swarm_result",facts,{
+      target:"#dialogText",
+      phase:(typeof state!=="undefined"&&state.phase)||"chat",
+      forceVoice:true,
+      after:done
+    });
+    if(!p)done();else Promise.resolve(p).catch(done);
+  }
+  function abortBeeGameV410(token,savedDialog){
+    if(token!==runToken)return;
+    beeScorePendingV510=null;
+    beeScoreStartV510=0;
+    stopBeeLoopV410();
+    try{window.__barAI48?.interrupt?.({preserveContinuation:true})}catch(_){}
+    overlay.classList.remove("beeGameV410");
+    overlay.classList.remove("active");
+    overlay.setAttribute("aria-hidden","true");
+    overlay.replaceChildren();
+    restoreBeeSodaV411();
+    window.__crazyBeeActiveV410=false;
+    window.__crazySequenceActiveV47=false;
+    let aiResumed=false;
+    try{aiResumed=Boolean(window.__barAI48?.resumeContinuation?.())}catch(e){console.error("Crazy bee AI continuation resume",e)}
+    const released=window.__barCrazyGateV47?.release?.()||0;
+    if(!aiResumed&&!released){
+      const dialog=document.getElementById("dialogText");
+      if(dialog)dialog.innerHTML=savedDialog;
+    }
+    scheduleNext(false);
+  }
+  function beeIntroV412(total,after){
+    let done=false;
+    const finish=()=>{if(done)return;done=true;try{after?.()}catch(e){console.error("Crazy bee intro after",e)}};
+    const facts={
+      mode:"crazy_bar",
+      total_bees:total,
+      situation:"Bin är på väg in i baren och spelaren behöver strax använda sodasifonen för att spruta bort dem.",
+      instruction:"Säg en enda kort spontan introduktionsreplik som tydligt berättar att bina kommer in NU. Håll den kort och naturlig som Alex, gärna torrhumoristisk. Ställ ingen fråga och ge inga receptinstruktioner."
+    };
+    const p=window.__barAI48?.priorityEvent?.("crazy_bee_swarm_intro",facts,{
+      target:"#dialogText",
+      phase:(typeof state!=="undefined"&&state.phase)||"chat",
+      forceVoice:true,
+      after:finish
+    });
+    if(!p){finish();return Promise.resolve(null)}
+    return Promise.resolve(p).catch(err=>{console.error("Crazy bee intro",err);finish();return null})
+  }
+  function beePlayMonologueV412(total,roundMs){
+    const totalSeconds=roundMs/1000;
+    const speechSeconds=Math.max(10,Math.min(18,totalSeconds-.7));
+    const targetWords=Math.round(speechSeconds*2.4);
+    const facts={
+      mode:"crazy_bar",
+      situation:"Bi-minigamet pågår nu. Spelaren styr sodasifonens pip vänster och höger och sprutar mot bina medan de växlar tempo, hovrar, gör korta riktningsryck och ibland vänder tillbaka.",
+      total_bees:total,
+      estimated_round_seconds:Number(totalSeconds.toFixed(1)),
+      target_speaking_seconds:Number(speechSeconds.toFixed(1)),
+      target_words:targetWords,
+      instruction:"Fortsätt med en sammanhängande improviserad och humoristisk bartender-monolog under själva minispelet. Tala som om du står bredvid spelaren medan hen siktar och sprutar. Variera formuleringarna fritt. Ställ inga frågor, ge inga receptinstruktioner och återgå inte till tidigare drinkdiskussion."
+    };
+    return window.__barAI48?.priorityEvent?.("crazy_bee_swarm_play",facts,{
+      target:"#dialogText",
+      phase:(typeof state!=="undefined"&&state.phase)||"chat",
+      forceVoice:true
+    })||Promise.resolve(null)
+  }
+  function pointSegmentDistanceV410(px,py,x1,y1,x2,y2){
+    const vx=x2-x1,vy=y2-y1,wx=px-x1,wy=py-y1;
+    const vv=vx*vx+vy*vy;
+    const t=vv?clampV410((wx*vx+wy*vy)/vv,0,1):0;
+    const dx=px-(x1+t*vx),dy=py-(y1+t*vy);
+    return Math.hypot(dx,dy);
+  }
+  function startBeeGameV410(){
+    if(!canRun())return;
+    beeScoreStartV510=performance.now();
+    beeScorePendingV510=null;
+    window.__crazySequenceActiveV47=true;
+    window.__crazyBeeActiveV410=true;
+    window.__crazyFallActiveV41=false;
+    const token=++runToken;
+    const dialog=document.getElementById("dialogText");
+    const savedDialog=dialog?.innerHTML||"";
+
+    /* During Alex's short intro the scene stays visible, but the overlay blocks
+       normal interaction. Pipe, aim control and fire button do not exist yet. */
+    overlay.replaceChildren();
+    overlay.classList.remove("beeGameV410");
+    overlay.classList.add("active");
+    overlay.setAttribute("aria-hidden","false");
+
+    Promise.resolve(beeConfigPromiseV410).then(raw=>{
+      if(token!==runToken||!window.__crazyBeeActiveV410)return;
+      const cfg=selectedBeeConfigV410(raw);
+      const s=scaleV410();
+      const total=10;
+      let hits=0,completed=0,finishQueued=false,currentAngle=cfg.pipe.r;
+      let startAt=0,beesStarted=false,controlsShown=false;
+      const bees=[];
+
+      const beeProbe=new Image();beeProbe.src="Bi.png";
+      const pipProbe=new Image();pipProbe.src="Pip.png";
+      const beeWidth=cfg.beeW*s;
+      const beeAspect=(beeProbe.naturalWidth>0&&beeProbe.naturalHeight>0)?beeProbe.naturalHeight/beeProbe.naturalWidth:1;
+      const beeHeight=beeWidth*beeAspect;
+
+      /* v4.13: the entire bee must stay above the pipe's nozzle at the
+         configured start angle, with a small safety margin. */
+      const pipeAspectV413=(pipProbe.naturalWidth>0&&pipProbe.naturalHeight>0)?pipProbe.naturalHeight/pipProbe.naturalWidth:(1024/1792);
+      const pipeHeightV413=cfg.pipe.w*s*pipeAspectV413;
+      const pipeTopV413=(overlay.clientHeight||1)*.49-250+250+(cfg.pipe.y-250)*s;
+      const pipePivotYV413=pipeTopV413+pipeHeightV413*cfg.pipe.py/100;
+      const pipeStartRadV413=cfg.pipe.r*Math.PI/180;
+      const pipeNozzleYV413=pipePivotYV413-Math.cos(pipeStartRadV413)*(pipeHeightV413*cfg.pipe.py/100);
+      const beeMaxTopV413=Math.max(28,pipeNozzleYV413-beeHeight-8);
+
+      let delayCursor=0;
+      for(let i=0;i<total;i++){
+        if(i>0)delayCursor+=rnd(700,1000);
+        const dir=Math.random()<.5?1:-1;
+        const wantedMinY=Math.max(38,overlay.clientHeight*.15);
+        const wantedMaxY=Math.max(80,overlay.clientHeight*.57);
+        const allowedMaxY=Math.min(wantedMaxY,beeMaxTopV413);
+        const allowedMinY=Math.min(wantedMinY,allowedMaxY);
+        const baseY=rnd(allowedMinY,Math.max(allowedMinY,allowedMaxY));
+        bees.push({
+          el:null,
+          startDir:dir,
+          dir,
+          width:beeWidth,
+          height:beeHeight,
+          baseY,
+          yCenter:baseY,
+          yTarget:baseY,
+          ySpeed:rnd(70,120),
+          amp:rnd(7,16),
+          phase:rnd(0,Math.PI*2),
+          baseSpeedFactor:rnd(.082,.115),
+          cruiseMul:rnd(.82,1.18),
+          delay:delayCursor,
+          maxLife:rnd(12500,15500),
+          retreatEligible:Math.random()<.27,
+          retreatAt:rnd(.42,.58),
+          retreating:false,
+          retreatTriggered:false,
+          sprintEligible:Math.random()<.56,
+          sprintUsed:false,
+          shortReverseCount:0,
+          mode:"cruise",
+          modeSpeedMul:1,
+          modeUntil:0,
+          nextDecision:0,
+          reverseReturnDir:dir,
+          x:null,
+          active:false,
+          done:false,
+          cx:0,
+          cy:0,
+          bornAt:0,
+          lastNow:0
+        });
+      }
+      const roundMs=Math.max(...bees.map(b=>b.delay+b.maxLife));
+
+      let pipe=null,aimPad=null,aimKnob=null,fireBtn=null,hud=null;
+
+      function pipeGeometry(){
+        const ow=overlay.clientWidth||1,oh=overlay.clientHeight||1;
+        const modelLeft=ow/2-260;
+        const modelTop=oh*.49-250;
+        const left=modelLeft+260+(cfg.pipe.x-260)*s;
+        const top=modelTop+250+(cfg.pipe.y-250)*s;
+        const width=cfg.pipe.w*s;
+        const aspect=(pipProbe.naturalWidth>0&&pipProbe.naturalHeight>0)?pipProbe.naturalHeight/pipProbe.naturalWidth:(1024/1792);
+        const height=width*aspect;
+        const pivotX=left+width*cfg.pipe.px/100;
+        const pivotY=top+height*cfg.pipe.py/100;
+        return {left,top,width,height,pivotX,pivotY};
+      }
+      function renderPipe(){
+        if(!pipe)return;
+        const g=pipeGeometry();
+        pipe.style.left=g.left+"px";
+        pipe.style.top=g.top+"px";
+        pipe.style.width=g.width+"px";
+        pipe.style.height=g.height+"px";
+        pipe.style.transformOrigin=cfg.pipe.px+"% "+cfg.pipe.py+"%";
+        pipe.style.transform="rotate("+currentAngle+"deg)";
+        pipe.style.zIndex="2148";
+      }
+      function setAimFromClient(clientX){
+        if(!aimPad||!aimKnob)return;
+        const r=aimPad.getBoundingClientRect();
+        const radius=Math.max(1,r.width*.36);
+        const dx=clampV410(clientX-(r.left+r.width/2),-radius,radius);
+        const norm=dx/radius;
+        currentAngle=cfg.pipe.r+norm*55;
+        aimKnob.style.transform="translate(calc(-50% + "+(norm*r.width*.28)+"px),-50%)";
+        aimPad.setAttribute("aria-valuenow",String(Math.round(currentAngle)));
+        renderPipe();
+      }
+      function queueFinish(){
+        if(finishQueued||completed<total)return;
+        finishQueued=true;
+        beeFinishTimerV410=setTimeout(()=>finishBeeGameV410(token,savedDialog,total,hits),550);
+      }
+      function hitBee(b){
+        if(b.done||!b.active||!b.el)return;
+        b.done=true;b.active=false;hits++;completed++;
+        if(hud)hud.textContent="Bin: "+hits+" / "+total;
+        try{navigator.vibrate?.(35)}catch(_){}
+        const a=b.el.animate([
+          {transform:b.el.style.transform,opacity:1,filter:"brightness(1) drop-shadow(0 5px 5px rgba(0,0,0,.32))"},
+          {transform:b.el.style.transform+" scale(1.25)",opacity:1,filter:"brightness(2.2) drop-shadow(0 0 16px rgba(196,242,255,.95))",offset:.45},
+          {transform:b.el.style.transform+" scale(.65)",opacity:0,filter:"brightness(2.5)"}
+        ],{duration:260,easing:"ease-out",fill:"forwards"});
+        a.onfinish=()=>b.el?.remove();
+        queueFinish();
+      }
+      function makeSprayDrop(x,y,delay){
+        const d=document.createElement("div");
+        d.className="crazySprayDropV410";
+        d.style.left=x+"px";d.style.top=y+"px";
+        overlay.appendChild(d);
+        const a=d.animate([
+          {opacity:0,transform:"translate(-50%,-50%) scale(.5)"},
+          {opacity:1,transform:"translate(-50%,-50%) scale(1)",offset:.25},
+          {opacity:0,transform:"translate(-50%,-50%) translateY(-8px) scale(.7)"}
+        ],{duration:260,delay,easing:"ease-out",fill:"forwards"});
+        a.onfinish=()=>d.remove();
+      }
+      function fireBeam(){
+        if(token!==runToken||!window.__crazyBeeActiveV410||!beesStarted||!pipe)return;
+        const g=pipeGeometry();
+        const rad=currentAngle*Math.PI/180;
+        const dx=Math.sin(rad),dy=-Math.cos(rad);
+        const nozzleDistance=g.height*cfg.pipe.py/100;
+        const x1=g.pivotX+dx*nozzleDistance;
+        const y1=g.pivotY+dy*nozzleDistance;
+        if(dy>=-.05)return;
+        const t=(0-y1)/dy;
+        const x2=x1+dx*t,y2=0;
+        const len=Math.hypot(x2-x1,y2-y1);
+        const rot=Math.atan2(y2-y1,x2-x1);
+        const beam=document.createElement("div");
+        beam.className="crazySprayV410";
+        beam.style.left=x1+"px";beam.style.top=(y1-4.5)+"px";
+        beam.style.width=len+"px";
+        beam.style.opacity="1";
+        beam.style.transform="rotate("+rot+"rad) scaleX(.01)";
+        overlay.appendChild(beam);
+
+        const travelMs=520;
+        const shotStarted=performance.now();
+        let faded=false;
+        function shotTick(now){
+          if(token!==runToken||!window.__crazyBeeActiveV410){beam.remove();return}
+          const p=clampV410((now-shotStarted)/travelMs,0,1);
+          beam.style.transform="rotate("+rot+"rad) scaleX("+Math.max(.01,p)+")";
+          const fx=x1+(x2-x1)*p,fy=y1+(y2-y1)*p;
+          for(const b of bees){
+            if(!b.active||b.done)continue;
+            const radius=Math.max(15,b.width*.42);
+            if(pointSegmentDistanceV410(b.cx,b.cy,x1,y1,fx,fy)<=radius)hitBee(b);
+          }
+          if(p<1){requestAnimationFrame(shotTick);return}
+          if(faded)return;
+          faded=true;
+          const fade=beam.animate([{opacity:1},{opacity:0}],{duration:130,easing:"ease-out",fill:"forwards"});
+          fade.onfinish=()=>beam.remove();
+        }
+        requestAnimationFrame(shotTick);
+        for(const frac of [.25,.52,.78]){
+          makeSprayDrop(
+            x1+(x2-x1)*frac+rnd(-5,5),
+            y1+(y2-y1)*frac+rnd(-5,5),
+            Math.round(frac*travelMs)
+          );
+        }
+        pipe.animate([
+          {transform:"rotate("+currentAngle+"deg) translateY(0)"},
+          {transform:"rotate("+currentAngle+"deg) translateY(5px)",offset:.42},
+          {transform:"rotate("+currentAngle+"deg) translateY(0)"}
+        ],{duration:150,easing:"ease-out"});
+      }
+
+      function beeLoop(now){
+        if(token!==runToken||!window.__crazyBeeActiveV410)return;
+        const W=overlay.clientWidth||1,H=overlay.clientHeight||1;
+        const pipeX=pipe?pipeGeometry().pivotX:W*.5;
+        const sprintHalfWidth=Math.max(44,W*.075);
+
+        for(const b of bees){
+          if(b.done||!b.el)continue;
+          const local=now-(startAt+b.delay);
+          if(local<0)continue;
+
+          if(!b.active){
+            b.active=true;
+            b.el.style.opacity="1";
+            b.x=b.startDir===1?-b.width-16:W+16;
+            b.yCenter=b.baseY;
+            b.yTarget=b.baseY;
+            b.bornAt=now;
+            b.lastNow=now;
+            b.nextDecision=now+rnd(420,950);
+          }
+
+          const dt=Math.min(.055,Math.max(0,(now-b.lastNow)/1000));
+          b.lastNow=now;
+          const age=now-b.bornAt;
+
+          if(age>=b.maxLife){
+            b.done=true;b.active=false;completed++;b.el.remove();queueFinish();continue;
+          }
+
+          const centerX=b.x+b.width/2;
+          const progress=b.startDir===1
+            ? clampV410(centerX/W,0,1)
+            : clampV410((W-centerX)/W,0,1);
+
+          /* Some wasps turn around for good near the middle and escape back
+             through the same edge they entered from. */
+          if(!b.retreatTriggered&&b.retreatEligible&&progress>=b.retreatAt&&b.mode!=="shortReverse"){
+            b.retreatTriggered=true;
+            b.retreating=true;
+            b.mode="retreat";
+            b.dir=-b.startDir;
+            b.modeSpeedMul=rnd(.95,1.35);
+            b.modeUntil=Infinity;
+          }
+
+          /* Only some wasps sprint through the siphon's horizontal danger area.
+             This is preselected per wasp and never reacts to the water beam. */
+          if(!b.retreating&&b.sprintEligible&&!b.sprintUsed&&
+             Math.abs(centerX-pipeX)<=sprintHalfWidth&&b.mode!=="shortReverse"){
+            b.sprintUsed=true;
+            b.mode="sprint";
+            b.dir=b.startDir;
+            b.modeSpeedMul=rnd(3.2,4.8);
+            b.modeUntil=now+rnd(260,580);
+          }
+
+          if(!b.retreating&&now>=b.modeUntil&&b.mode!=="cruise"){
+            if(b.mode==="shortReverse")b.dir=b.reverseReturnDir;
+            else b.dir=b.startDir;
+            b.mode="cruise";
+            b.cruiseMul=rnd(.72,1.24);
+            b.modeSpeedMul=b.cruiseMul;
+            b.nextDecision=now+rnd(380,1050);
+          }
+
+          if(!b.retreating&&b.mode==="cruise"&&now>=b.nextDecision){
+            const roll=Math.random();
+            if(roll<.15){
+              b.mode="hover";
+              b.modeSpeedMul=0;
+              b.modeUntil=now+rnd(320,900);
+            }else if(roll<.34&&b.shortReverseCount<2){
+              b.shortReverseCount++;
+              b.mode="shortReverse";
+              b.reverseReturnDir=b.startDir;
+              b.dir=-b.startDir;
+              b.modeSpeedMul=rnd(1.25,2.05);
+              b.modeUntil=now+rnd(220,560);
+            }else if(roll<.55){
+              b.mode="burst";
+              b.modeSpeedMul=rnd(1.55,2.35);
+              b.modeUntil=now+rnd(300,720);
+            }else if(roll<.80){
+              const maxBeeY=Math.max(28,Math.min(H*.66-b.height,beeMaxTopV413));
+              b.yTarget=clampV410(b.yCenter+rnd(-78,78),28,maxBeeY);
+              b.ySpeed=rnd(180,330);
+              b.mode="verticalJink";
+              b.modeSpeedMul=b.cruiseMul;
+              b.modeUntil=now+rnd(260,620);
+            }else{
+              b.cruiseMul=rnd(.68,1.28);
+              b.nextDecision=now+rnd(360,1050);
+            }
+          }
+
+          const speedMul=b.mode==="cruise"?b.cruiseMul:b.modeSpeedMul;
+          const speedPxSec=W*b.baseSpeedFactor*speedMul;
+          b.x+=b.dir*speedPxSec*dt;
+
+          const maxBeeYV413=Math.max(28,Math.min(H*.66-b.height,beeMaxTopV413));
+          if(b.mode!=="verticalJink"&&Math.random()<.006){
+            b.yTarget=clampV410(b.baseY+rnd(-54,54),28,maxBeeYV413);
+            b.ySpeed=rnd(80,150);
+          }
+          const yDelta=b.yTarget-b.yCenter;
+          const yStep=Math.sign(yDelta)*Math.min(Math.abs(yDelta),b.ySpeed*dt);
+          b.yCenter=clampV410(b.yCenter+yStep,28,maxBeeYV413);
+          const flutter=Math.sin(age*.006+b.phase)*b.amp+
+            Math.sin(age*.014+b.phase*1.7)*b.amp*.22;
+          const y=clampV410(b.yCenter+flutter,28,maxBeeYV413);
+
+          const escapedStart=b.startDir===1
+            ? b.x+b.width<-18
+            : b.x>W+18;
+          const escapedFar=b.startDir===1
+            ? b.x>W+18
+            : b.x+b.width<-18;
+          if((b.retreating&&escapedStart)||(!b.retreating&&escapedFar)){
+            b.done=true;b.active=false;completed++;b.el.remove();queueFinish();continue;
+          }
+
+          b.cx=b.x+b.width/2;
+          b.cy=y+b.height/2;
+          /* The sprite always faces the actual current flight direction. */
+          b.el.style.transform="translate("+b.x+"px,"+y+"px) scaleX("+(b.dir===1?1:-1)+")";
+        }
+        if(completed<total)beeRafV410=requestAnimationFrame(beeLoop);
+      }
+      function beginBeeRound(){
+        if(token!==runToken||beesStarted||!window.__crazyBeeActiveV410)return;
+        beesStarted=true;
+        if(fireBtn){fireBtn.disabled=false;fireBtn.style.opacity=""}
+        startAt=performance.now();
+        beeRafV410=requestAnimationFrame(beeLoop);
+      }
+      function showControlsAfterIntro(){
+        if(token!==runToken||controlsShown||!window.__crazyBeeActiveV410)return;
+        controlsShown=true;
+        clearTimeout(beePrestartTimerV411);beePrestartTimerV411=null;
+
+        hideBeeSodaV411();
+        overlay.classList.add("beeGameV410");
+
+        pipe=document.createElement("img");
+        pipe.className="crazyPipeV410";
+        pipe.src="Pip.png";
+        pipe.alt="";
+        pipe.setAttribute("aria-hidden","true");
+        overlay.appendChild(pipe);
+
+        aimPad=document.createElement("div");
+        aimPad.className="crazyAimPadV410";
+        aimPad.setAttribute("role","slider");
+        aimPad.setAttribute("aria-label","Styr pipen vänster och höger");
+        aimPad.setAttribute("aria-valuemin","-55");
+        aimPad.setAttribute("aria-valuemax","55");
+        aimPad.setAttribute("aria-valuenow",String(cfg.pipe.r));
+        aimKnob=document.createElement("div");
+        aimKnob.className="crazyAimKnobV410";
+        aimPad.appendChild(aimKnob);
+        overlay.appendChild(aimPad);
+
+        fireBtn=document.createElement("button");
+        fireBtn.type="button";
+        fireBtn.className="crazyFireBtnV410";
+        fireBtn.textContent="SPRUTA";
+        fireBtn.disabled=true;
+        fireBtn.style.opacity=".58";
+        fireBtn.setAttribute("aria-label","Spruta sodavatten");
+        overlay.appendChild(fireBtn);
+
+        hud=document.createElement("div");
+        hud.className="crazyBeeHudV410";
+        hud.textContent="Bin: 0 / "+total;
+        overlay.appendChild(hud);
+
+        renderPipe();
+
+        aimPad.addEventListener("pointerdown",e=>{
+          e.preventDefault();e.stopPropagation();
+          if(beeAimPointerV410!==null)return;
+          beeAimPointerV410=e.pointerId;
+          try{aimPad.setPointerCapture(e.pointerId)}catch(_){}
+          setAimFromClient(e.clientX);
+        },{passive:false});
+        aimPad.addEventListener("pointermove",e=>{
+          if(e.pointerId!==beeAimPointerV410)return;
+          e.preventDefault();setAimFromClient(e.clientX);
+        },{passive:false});
+        const releaseAim=e=>{
+          if(e.pointerId!==beeAimPointerV410)return;
+          beeAimPointerV410=null;
+          try{aimPad.releasePointerCapture(e.pointerId)}catch(_){}
+          currentAngle=cfg.pipe.r;
+          aimKnob.style.transform="translate(-50%,-50%)";
+          aimPad.setAttribute("aria-valuenow",String(Math.round(currentAngle)));
+          renderPipe();
+        };
+        aimPad.addEventListener("pointerup",releaseAim,{passive:false});
+        aimPad.addEventListener("pointercancel",releaseAim,{passive:false});
+        fireBtn.addEventListener("pointerdown",e=>{e.preventDefault();e.stopPropagation();fireBeam()},{passive:false});
+
+        for(const b of bees){
+          const el=document.createElement("img");
+          el.className="crazyBeeV410";
+          el.src="Bi.png";
+          el.alt="";
+          el.setAttribute("aria-hidden","true");
+          el.style.width=b.width+"px";
+          el.style.height=b.height+"px";
+          el.style.opacity="0";
+          overlay.appendChild(el);
+          b.el=el;
+        }
+
+        /* Start Alex's longer live commentary when the controls appear.
+           The first bee enters a moment later. */
+        beePlayMonologueV412(total,roundMs).catch(()=>{});
+        setTimeout(beginBeeRound,rnd(300,500));
+      }
+
+      beePrestartTimerV411=setTimeout(()=>abortBeeGameV410(token,savedDialog),18000);
+      beeIntroV412(total,showControlsAfterIntro).catch(()=>{});
+    }).catch(err=>{
+      console.error("Crazy bee config/start failed",err);
+      abortBeeGameV410(token,savedDialog);
+    });
+  }
+  function chooseCrazyV413(){
+    let next;
+    if(lastCrazyTypeV413&&crazyStreakV413>=2){
+      next=lastCrazyTypeV413==="bees"?"bottles":"bees";
+    }else{
+      next=Math.random()<.5?"bees":"bottles";
+    }
+    if(next===lastCrazyTypeV413)crazyStreakV413++;
+    else{lastCrazyTypeV413=next;crazyStreakV413=1}
+    return next;
+  }
+  function startNextCrazyV410(){
+    if(!canRun())return;
+    const next=chooseCrazyV413();
+    if(next==="bees")startBeeGameV410();
+    else startBottleFall();
+  }
+
+  function crazyStartMonologue(total,roundMs,onInterrupt,onPlaybackStart){
+    const totalSeconds=roundMs/1000;
+    const speechSeconds=Math.max(5,Math.min(8.5,totalSeconds-.8));
+    const targetWords=Math.round(speechSeconds*2.45);
+    const facts={
+      mode:"crazy_bar",
+      situation:"Ett dolt flasklager ovanför barens tak har börjat rasa och flaskor faller genom baren medan spelaren försöker fånga dem.",
+      falling_bottles:total,
+      estimated_round_seconds:Number(totalSeconds.toFixed(1)),
+      target_speaking_seconds:Number(speechSeconds.toFixed(1)),
+      target_words:targetWords,
+      instruction:"Reagera direkt på att lagret ovanför taket rasar och fortsätt sedan med en rapp, improviserad och humoristisk bartender-monolog medan flaskorna faller. Tala som om du står mitt i kaoset tillsammans med spelaren. Variera formuleringarna fritt. Avsluta monologen innan den angivna taltiden är slut. Skriv inga tekniska speltermer och använd inga förutbestämda repliker."
+    };
+    return window.__barAI48?.priorityEvent?.("crazy_bottle_rain_start",facts,{
+      target:"#dialogText",
+      phase:(typeof state!=="undefined"&&state.phase)||"chat",
+      forceVoice:true,
+      onInterrupt,
+      onPlaybackStart
+    })||Promise.resolve(null);
+  }
+  function finishSequence(savedDialog){
+    emitCrazyScoreV510("bottles",bottleScorePendingV510,bottleScoreStartV510);
+    bottleScorePendingV510=null;
+    bottleScoreStartV510=0;
+    clearTimeout(prestartTimer);prestartTimer=null;
+    stopWarningVibration();
+    overlay.classList.remove("active");
+    overlay.setAttribute("aria-hidden","true");
+    overlay.replaceChildren();
+    window.__crazyFallActiveV41=false;
+    window.__crazySequenceActiveV47=false;
+    let aiResumed=false;
+    try{aiResumed=Boolean(window.__barAI48?.resumeContinuation?.())}catch(e){console.error("Crazy AI continuation resume",e)}
+    const released=window.__barCrazyGateV47?.release?.()||0;
+    if(!aiResumed&&!released){
+      const dialog=document.getElementById("dialogText");
+      if(dialog)dialog.innerHTML=savedDialog;
+    }
+    scheduleNext(false);
+  }
+  function crazyResultComment(savedDialog,total,saved){
+    const missed=Math.max(0,total-saved);
+    const pct=total?Math.round(saved*100/total):0;
+    const facts={
+      mode:"crazy_bar",
+      total_bottles:total,
+      caught_bottles:saved,
+      missed_bottles:missed,
+      caught_percent:pct,
+      instruction:"Kommentera resultatet direkt som Alex i högst två korta meningar. Reagera naturligt på hur många flaskor spelaren räddade respektive missade. Var rapp, varm och gärna torrhumoristisk. Formulera dig fritt och använd inga förutbestämda repliker."
+    };
+    const done=()=>finishSequence(savedDialog);
+    const p=window.__barAI48?.priorityEvent?.("crazy_bottle_rain_result",facts,{
+      target:"#dialogText",
+      phase:(typeof state!=="undefined"&&state.phase)||"chat",
+      forceVoice:true,
+      after:done
+    });
+    if(!p)done();
+    return p||Promise.resolve(null);
+  }
+  function makeBottle(source,leftPct){
+    const b=source.cloneNode(true);
+    b.removeAttribute("id");
+    b.removeAttribute("role");
+    b.removeAttribute("tabindex");
+    b.removeAttribute("aria-label");
+    b.removeAttribute("data-spirit");
+    b.classList.add("crazyBottle");
+    b.removeAttribute("style");
+    b.style.left=leftPct+"%";
+    b.style.top="0";
+    b.style.transform="translateX(-50%)";
+    b.querySelectorAll("[id]").forEach(n=>n.removeAttribute("id"));
+    return b;
+  }
+  function abortBeforeFall(token,savedDialog){
+    if(token!==runToken)return;
+    bottleScorePendingV510=null;
+    bottleScoreStartV510=0;
+    ++runToken;
+    clearTimeout(prestartTimer);prestartTimer=null;
+    stopWarningVibration();
+    try{window.__barAI48?.interrupt?.()}catch(_){}
+    overlay.classList.remove("active");
+    overlay.setAttribute("aria-hidden","true");
+    overlay.replaceChildren();
+    window.__crazyFallActiveV41=false;
+    window.__crazySequenceActiveV47=false;
+    let aiResumed=false;
+    try{aiResumed=Boolean(window.__barAI48?.resumeContinuation?.())}catch(e){console.error("Crazy prefall AI continuation resume",e)}
+    const released=window.__barCrazyGateV47?.release?.()||0;
+    if(!aiResumed&&!released){
+      const dialog=document.getElementById("dialogText");
+      if(dialog)dialog.innerHTML=savedDialog;
+    }
+    scheduleNext(false);
+  }
+  function finishRun(token,savedDialog,total,saved){
+    if(token!==runToken)return;
+    bottleScorePendingV510={total,saved,missed:Math.max(0,total-saved)};
+    window.__crazyFallActiveV41=false;
+    overlay.replaceChildren();
+    const t=document.getElementById("toast");
+    if(t){
+      t.textContent=saved===total?("Alla "+total+" flaskor räddade!"):("Du räddade "+saved+" av "+total+" flaskor.");
+      t.classList.add("show");
+      setTimeout(()=>t.classList.remove("show"),1700);
+    }
+    crazyResultComment(savedDialog,total,saved);
+  }
+  function startBottleFall(){
+    if(!canRun())return;
+    const sources=bottleIds.map(id=>document.getElementById(id)).filter(Boolean);
+    if(!sources.length){scheduleNext(false);return}
+    bottleScoreStartV510=performance.now();
+    bottleScorePendingV510=null;
+
+    window.__crazySequenceActiveV47=true;
+    window.__crazyFallActiveV41=true;
+    const token=++runToken;
+    const count=randint(8,14);
+    let completed=0,saved=0,launched=false,speechStarted=false;
+    const dialog=document.getElementById("dialogText");
+    const savedDialog=dialog?.innerHTML||"";
+
+    overlay.replaceChildren();
+    overlay.classList.add("active");
+    overlay.setAttribute("aria-hidden","false");
+
+    const slots=shuffle(Array.from({length:count},(_,i)=>((i+.5)/count)*100));
+    const chosen=shuffle(sources.slice()).slice(0,Math.min(count,sources.length));
+    while(chosen.length<count)chosen.push(sources[randint(0,sources.length-1)]);
+
+    const startSpread=rnd(3000,5000);
+    const rawDelays=Array.from({length:count},(_,i)=>{
+      if(count<=1)return 0;
+      const base=(i/(count-1))*startSpread;
+      return Math.max(0,base+rnd(-180,180));
+    });
+    const minDelay=Math.min(...rawDelays);
+    const delays=shuffle(rawDelays.map(d=>Math.max(0,d-minDelay)));
+    const durations=Array.from({length:count},()=>rnd(3840,4800));
+    const roundMs=Math.max(...durations.map((d,i)=>d+delays[i]));
+
+    function oneDone(wasSaved,bottle){
+      if(!bottle.dataset.v47Done){
+        bottle.dataset.v47Done="1";
+        completed++;
+        if(wasSaved)saved++;
+      }
+      if(completed>=count)setTimeout(()=>finishRun(token,savedDialog,count,saved),220);
+    }
+
+    function launchBottles(){
+      if(token!==runToken||launched||!window.__crazySequenceActiveV47)return;
+      launched=true;
+      clearTimeout(prestartTimer);prestartTimer=null;
+      stopWarningVibration();
+
+      chosen.forEach((src,i)=>{
+        const left=Math.max(6,Math.min(94,slots[i]+rnd(-2.5,2.5)));
+        const bottle=makeBottle(src,left);
+        overlay.appendChild(bottle);
+        const startRot=rnd(-18,18);
+        const dir=Math.random()<.5?-1:1;
+        const duration=durations[i];
+        const rotation=dir*rnd(190,320);
+        const delay=delays[i];
+        const bottleHeight=Math.max(1,bottle.getBoundingClientRect().height);
+        const startY=-(bottleHeight+24);
+        const endY=overlay.clientHeight+bottleHeight+24;
+        const anim=bottle.animate([
+          {transform:"translate(-50%,"+startY+"px) rotate("+startRot+"deg)",opacity:1},
+          {transform:"translate(-50%,"+endY+"px) rotate("+(startRot+rotation)+"deg)",opacity:1}
+        ],{duration,delay,easing:"cubic-bezier(.32,.08,.72,.58)",fill:"both"});
+
+        bottle.addEventListener("pointerdown",e=>{
+          e.preventDefault();e.stopPropagation();
+          if(bottle.dataset.v47Done)return;
+          anim.pause();
+          const frozenTransform=getComputedStyle(bottle).transform==="none"?"translateX(-50%)":getComputedStyle(bottle).transform;
+          bottle.style.transform=frozenTransform;
+          anim.cancel();
+          bottle.style.pointerEvents="none";
+          try{navigator.vibrate?.(45)}catch(_){}
+          const catchAnim=bottle.animate([
+            {transform:frozenTransform+" scale(1)",opacity:1,filter:"brightness(1) drop-shadow(0 7px 7px rgba(0,0,0,.38))"},
+            {transform:frozenTransform+" scale(1.28)",opacity:1,filter:"brightness(2.25) drop-shadow(0 0 18px rgba(255,244,165,.98))",offset:.42},
+            {transform:frozenTransform+" scale(.92)",opacity:0,filter:"brightness(2.5) drop-shadow(0 0 24px rgba(255,255,220,.95))"}
+          ],{duration:280,easing:"ease-out",fill:"forwards"});
+          catchAnim.onfinish=()=>{oneDone(true,bottle);bottle.remove()};
+        },{passive:false});
+
+        anim.onfinish=()=>{
+          if(bottle.dataset.v47Done)return;
+          bottle.style.pointerEvents="none";
+          try{navigator.vibrate?.(90)}catch(_){}
+          const miss=bottle.animate([{opacity:1},{opacity:0}],{duration:140,fill:"forwards"});
+          miss.onfinish=()=>{oneDone(false,bottle);bottle.remove()};
+        };
+      });
+    }
+
+    prestartTimer=setTimeout(()=>abortBeforeFall(token,savedDialog),12000);
+    const monologue=crazyStartMonologue(
+      count,
+      roundMs,
+      ()=>startWarningVibration(token),
+      ()=>{
+        if(token!==runToken||speechStarted)return;
+        speechStarted=true;
+        setTimeout(launchBottles,rnd(300,500));
+      }
+    );
+    Promise.resolve(monologue).then(()=>{
+      if(token===runToken&&!launched&&!speechStarted)abortBeforeFall(token,savedDialog);
+    }).catch(()=>abortBeforeFall(token,savedDialog));
+  }
+
+  overlay.addEventListener("pointerdown",e=>{if(e.target===overlay){e.preventDefault();e.stopPropagation()}},{passive:false});
+
+  const observer=new MutationObserver(()=>{
+    if(barScreen.classList.contains("active")){
+      if(window.__crazyBarModeV41&&!nextTimer&&!window.__crazySequenceActiveV47)scheduleNext(true);
+      if(!window.__crazyBarModeV41){clearTimeout(nextTimer);nextTimer=null}
+    }else{
+      clearTimeout(nextTimer);nextTimer=null;
+      if(window.__crazySequenceActiveV47){
+        ++runToken;
+        clearTimeout(prestartTimer);prestartTimer=null;
+        stopWarningVibration();
+        try{window.__barAI48?.interrupt?.()}catch(_){}
+        stopBeeLoopV410();
+        restoreBeeSodaV411();
+        window.__crazyFallActiveV41=false;
+        window.__crazyBeeActiveV410=false;
+        window.__crazySequenceActiveV47=false;
+        overlay.classList.remove("active");
+        overlay.setAttribute("aria-hidden","true");
+        overlay.replaceChildren();
+        window.__barCrazyGateV47?.clear?.();
+        window.__barAI48?.clearContinuation?.();
+      }
+    }
+  });
+  observer.observe(barScreen,{attributes:true,attributeFilter:["class"]});
+
+  window.__crazyBarV41={
+    get enabled(){return !!window.__crazyBarModeV41},
+    get active(){return !!window.__crazySequenceActiveV47},
+    get falling(){return !!window.__crazyFallActiveV41},
+    get bees(){return !!window.__crazyBeeActiveV410},
+    get policy(){return currentCrazyMode()},
+    get lastType(){return lastCrazyTypeV413},
+    get streak(){return crazyStreakV413},
+    trigger:startNextCrazyV410,
+    triggerBee:startBeeGameV410,
+    triggerBottle:startBottleFall,
+    schedule:scheduleNext
+  };
+})();
+</script>
+<script src="bar_v5_12_custom.js"></script>
+<script src="bar_v5_12_results.js"></script>
+</body></html>
