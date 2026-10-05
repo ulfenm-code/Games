@@ -180,6 +180,7 @@
     '.v51IbaLink{display:block;margin:14px 0;padding:11px 14px;border:1px solid #ffffff33;border-radius:12px;text-decoration:none;color:inherit;background:#ffffff0c;font-weight:800}',
     '.v51PrepRow{display:flex;gap:9px;margin-top:10px;align-items:stretch}',
     '.v51PrepRow input{flex:1;min-width:0}',
+    '.v513PrepTip{margin:9px 2px 4px;font-size:13px;line-height:1.4;opacity:.78;text-align:left}',
     '.v51Status{margin:15px 0 10px;display:grid;gap:7px;text-align:left}',
     '.v51StatusItem{padding:8px 10px;border-radius:10px;background:#ffffff0b;border:1px solid #ffffff18}',
     '.v51StatusItem[data-state="working"]{opacity:.85}',
