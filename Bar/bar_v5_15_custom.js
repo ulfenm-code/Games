@@ -843,7 +843,14 @@
   }
   function resetCustomGlassVisuals(){
     const hf=document.getElementById('glassLiquidFill');if(hf){hf.style.height='0%';hf.style.opacity='0';hf.style.removeProperty('background')}
-    const hi=document.getElementById('glassIceLayer');if(hi){hi.style.display='none';hi.innerHTML=''}
+    const hi=document.getElementById('glassIceLayer');if(hi){hi.style.display='none';hi.style.opacity='';hi.innerHTML=''}
+    for(const id of ['glassMintCloud','glassLimeSugarCloud','glassBubbles']){
+      const e=document.getElementById(id);if(e){e.style.display='none';e.style.height='0%';e.style.opacity='0';e.innerHTML=''}
+    }
+    const mai=document.querySelector('#doubleRocksGroup .maiTaiLiquid');if(mai){mai.style.transition='none';mai.style.height='0%'}
+    const maiIce=document.querySelector('#doubleRocksGroup .maiTaiIce');if(maiIce)maiIce.style.display='none';
+    const jungle=document.querySelector('#rocksGroup .jungleLiquid420');if(jungle){jungle.style.transition='none';jungle.style.height='0%'}
+    const jungleIce=document.querySelector('#rocksGroup .jungleIce420');if(jungleIce)jungleIce.style.display='none';
     document.querySelectorAll('.v515DoubleContent,.v515RocksContent').forEach(x=>x.remove())
   }
   function ensureGlassLiquid(groupId){
@@ -968,6 +975,7 @@
       }
     }catch(err){console.error('v5.1 startconfig',err)}
     barScene?.classList.add('v51CustomBar');
+    resetCustomGlassVisuals();
     installBottleSet();layoutCustomBottles();
     const c=mixerContent();
     if(c){
