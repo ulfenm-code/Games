@@ -882,6 +882,7 @@
     const prepared=state.egenDrinkPrepared;if(!prepared)return;
     const chosenBtn=crazy?crazyBtn:barBtn;if(chosenBtn?.disabled)return;
     state.egenDrink=true;state.egenDrinkData=prepared.drink;
+    for(const step of prepared.gameDrink?.steps||[])delete step.v512HelpPenaltyApplied;
     window.__crazyBarModeV41=Boolean(crazy);
     state.phase='chat';state.mood='tropical';state.bar='tropical';state.egenDrinkMixerMl=0;state.egenDrinkMixerHasIce=false;state.egenDrinkGlassMl=0;state.egenDrinkGlassHasIce=false;state.v512HelpUses=0;state.v512HelpPenalty=0;
     barScene?.classList.add('v51CustomBar');
