@@ -1,0 +1,11 @@
+{
+  "version": 94,
+  "type": "garnish-anchors",
+  "coordinateModel": "glass-local-percent",
+  "anchors": {
+    "highballGlass": {"x": 50, "y": 8},
+    "doubleRocksGlass": {"x": 50, "y": 8},
+    "rocksGlass": {"x": 50, "y": 8},
+    "tikiGlass": {"x": 50, "y": 8}
+  }
+}
