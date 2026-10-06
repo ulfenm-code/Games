@@ -1135,7 +1135,6 @@
       offsets.forEach((offset,copyIndex)=>{
         const img=document.createElement('img');
         img.className='v51CustomGarnish';img.alt='';
-        if(/^https:\/\//i.test(String(v.src||'')))img.crossOrigin='anonymous';
         img.dataset.garnishName=String(v.name||'');
         img.dataset.garnishCategory=String(v.category||'');
         img.dataset.garnishCopy=String(copyIndex+1);
