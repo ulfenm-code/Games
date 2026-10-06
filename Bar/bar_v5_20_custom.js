@@ -5,6 +5,7 @@
 
   const CUSTOM_API='https://azoytlshxfbxbrsqdvvn.supabase.co/functions/v1/bar-custom-drink-v520';
   const PUBLIC_KEY='sb_publishable_OVGQTPYpZEhD9tdRP57IOg_8UwKU2Jd';
+  const v520LegacyCleanupPing=fetch(CUSTOM_API,{method:'GET'}).catch(()=>null);
   const IBA_LIST='https://iba-world.com/cocktails/';
   const tools=window.__barTools417||window.__barTools416||window.__barTools415||window.__barTools414;
   const scene=tools?.scene||window.__barSceneConfig3105||window.__barSceneConfig3100;
