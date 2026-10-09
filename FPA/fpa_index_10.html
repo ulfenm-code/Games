@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Plastlabyrinten</title>
+<link rel="stylesheet" href="fpa_style_10.css">
+</head>
+<body>
+<div id="hud">Luta telefonen</div>
+<button id="setBtn" class="hide" aria-label="Inställningar" aria-expanded="false">⚙</button>
+<div id="settings" class="hide" role="dialog" aria-label="Inställningar">
+  <h2>Inställningar</h2>
+  <div class="switch"><label for="levelToggle">Vattenpass</label><input type="checkbox" id="levelToggle"></div>
+  <button id="recalBtn" class="ghost">Nollställ rakt läge</button>
+  <div class="row">
+    <label for="deadRange">Lutning som inte räknas <b id="deadVal">5°</b></label>
+    <input type="range" id="deadRange" min="2" max="15" step="1" value="5">
+  </div>
+  <div class="row">
+    <label for="hopRange">Gräns mellan mjuk sväng och hopp <b id="hopVal">45°</b></label>
+    <input type="range" id="hopRange" min="25" max="65" step="1" value="45">
+  </div>
+  <p class="note">Spelet står still medan inställningarna är öppna. Tryck på ⚙ igen för att fortsätta.</p>
+</div>
+<svg id="level" class="hide" viewBox="-65 -65 130 130" aria-label="Vattenpass">
+  <circle r="62" fill="#06121fb3" stroke="#ffffff55" stroke-width="2"/>
+  <circle r="50" fill="none" stroke="#ffd16688" stroke-width="2" stroke-dasharray="4 4"/>
+  <rect id="levelDead" x="-9" y="-9" width="18" height="18" rx="3" fill="#5ad1ff33" stroke="#5ad1ff" stroke-width="1.5"/>
+  <line x1="-58" y1="0" x2="58" y2="0" stroke="#ffffffaa" stroke-width="1.5"/>
+  <line x1="0" y1="-58" x2="0" y2="58" stroke="#ffffffaa" stroke-width="1.5"/>
+  <circle id="levelDot" r="7" fill="#4ade80" stroke="#06121f" stroke-width="2"/>
+</svg>
+<div id="hint"></div>
+<div id="tilt" class="hide">📱</div>
+<button id="mapBtn" class="hide" aria-label="Zooma ut och se kuben utifrån" title="Zooma ut och se kuben (M)">🧊</button>
+<button id="nearBtn" class="ctl hide">Visa allt</button>
+<button id="modeBtn" class="ctl hide">Läge: Spärr</button>
+<button id="helpBtn" class="ctl hide">Hjälp: på</button>
+<div id="helpArrow" class="hide"></div>
+<div id="tip" class="hide"></div>
+
+<div class="ov" id="start">
+  <h1>Plastlabyrinten</h1>
+  <p>Hamstern är fångad i en kub med gångar av glas. Rullar den i ett hål fastnar den halvvägs. Zooma ut och svep för att tippa kuben, så att golvet i nästa gång hamnar nedåt. Hitta utgången!</p>
+  <button id="go">Börja</button>
+  <button class="ghost" id="nomotion">Jag har ingen lutningssensor</button>
+  <p id="diag" style="font-family:monospace;font-size:12px;opacity:.75;white-space:pre-line;max-width:34ch;text-align:left;margin-top:6px"></p>
+</div>
+<div class="ov hide" id="win">
+  <h1>I mål!</h1>
+  <p id="timeText"></p>
+  <button onclick="location.reload()">Spela igen</button>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="fpa_game_10.js"></script>
+</body>
+</html>
