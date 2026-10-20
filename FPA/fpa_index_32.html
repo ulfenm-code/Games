@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Hamster Cube</title>
+<link rel="stylesheet" href="fpa_style_32.css">
+</head>
+<body>
+<div id="hud">Tilt your phone</div>
+<button id="setBtn" class="hide" aria-label="Settings" aria-expanded="false">⚙</button>
+<div id="settings" class="hide" role="dialog" aria-label="Settings" style="max-height:calc(100dvh - 90px);overflow-y:auto">
+  <h2>Settings</h2>
+  <div class="switch"><label for="soundToggle">Sound</label><input type="checkbox" id="soundToggle" checked></div>
+  <div class="row">
+    <label for="volRange">Volume <b id="volVal">7</b></label>
+    <input type="range" id="volRange" min="0" max="10" step="1" value="7">
+  </div>
+  <div class="row">
+    <label for="glassRange">Floor glass <b id="glassVal">7</b></label>
+    <input type="range" id="glassRange" min="1" max="10" step="1" value="7">
+  </div>
+  <div class="switch"><label for="levelToggle">Spirit level</label><input type="checkbox" id="levelToggle"></div>
+  <button id="recalBtn" class="ghost">Reset level position</button>
+  <div class="row">
+    <label for="speedRange">Top speed (at the outer circle) <b id="speedVal">6</b></label>
+    <input type="range" id="speedRange" min="1" max="10" step="1" value="6">
+  </div>
+  <div class="row">
+    <label for="fullRange">Full speed tilt <b id="fullVal">28°</b></label>
+    <input type="range" id="fullRange" min="15" max="45" step="1" value="28">
+  </div>
+  <div class="row">
+    <label for="deadRange">Tilt that is ignored <b id="deadVal">5°</b></label>
+    <input type="range" id="deadRange" min="2" max="15" step="1" value="5">
+  </div>
+  <div class="row">
+    <label for="turnRange">How fast the hamster turns <b id="turnVal">6</b></label>
+    <input type="range" id="turnRange" min="2" max="12" step="1" value="6">
+  </div>
+  <div class="row">
+    <label for="brakeRange">Shaft brake <b id="brakeVal">7</b></label>
+    <input type="range" id="brakeRange" min="1" max="10" step="1" value="7">
+  </div>
+  <p class="note">The game is paused while the settings are open. Tap ⚙ again to continue.</p>
+</div>
+<svg id="level" class="hide" viewBox="-65 -65 130 130" aria-label="Spirit level">
+  <circle r="62" fill="#06121fb3" stroke="#ffffff55" stroke-width="2"/>
+  <circle id="levelFull" r="37" fill="none" stroke="#ffd16688" stroke-width="2" stroke-dasharray="4 4"/>
+  <circle id="levelDead" r="9" fill="#5ad1ff33" stroke="#5ad1ff" stroke-width="1.5"/>
+  <line x1="-58" y1="0" x2="58" y2="0" stroke="#ffffffaa" stroke-width="1.5"/>
+  <line x1="0" y1="-58" x2="0" y2="58" stroke="#ffffffaa" stroke-width="1.5"/>
+  <circle id="levelDot" r="7" fill="#4ade80" stroke="#06121f" stroke-width="2"/>
+</svg>
+<div id="hint"></div>
+<div id="tilt" class="hide">📱</div>
+<div id="lives" class="hide" role="status"></div>
+<button id="jumpBtn" class="hide" aria-label="Jump">↑<span>JUMP</span></button>
+<button id="mapBtn" class="hide" aria-label="Zoom out and see the cube" title="Zoom out and see the cube (M)">🧊</button>
+<button id="nearBtn" class="ctl hide">Show all</button>
+<button id="helpBtn" class="ctl hide">Help: on</button>
+<div id="helpArrow" class="hide"></div>
+<div id="tip" class="hide"></div>
+
+<div class="ov" id="start">
+  <h1>Hamster Cube</h1>
+  <p>The hamster is trapped in a cube of glass tunnels. If it rolls into a blue hole it gets stuck halfway: zoom out and swipe to tip the cube so the floor of the next tunnel points down. Red holes cost a life. Press JUMP to jump: the faster you roll, the longer the jump (green = long enough for a hole). Watch out for holes in the floor, cracked glass and grey hamsters that chase you. Run in the hamster wheel to charge the battery that opens a door or runs the lift. Find the exit!</p>
+  <div class="levels" role="group" aria-label="Choose a level">
+    <button class="lvl" data-level="training">Training Cube</button>
+    <button class="lvl" data-level="twist">Twist &amp; Turn</button>
+  </div>
+  <button id="go">Start</button>
+  <button class="ghost" id="nomotion">I don't have a tilt sensor</button>
+  <p id="diag" style="font-family:monospace;font-size:12px;opacity:.75;white-space:pre-line;max-width:34ch;text-align:left;margin-top:6px"></p>
+</div>
+<div class="ov hide" id="win">
+  <h1>Finished!</h1>
+  <p id="timeText"></p>
+  <div class="hs">
+    <form id="hsForm" class="hide">
+      <label for="hsName">You made the top 5! Enter your name:</label>
+      <div class="hsrow"><input id="hsName" maxlength="16" autocomplete="nickname" required><button type="submit" id="hsSave">Save</button></div>
+    </form>
+    <h2 id="hsTitle">High score</h2>
+    <ol id="hsList"></ol>
+    <p id="hsMsg"></p>
+  </div>
+  <button onclick="location.reload()">Play again</button>
+</div>
+<div class="ov hide" id="over">
+  <h1>Game over</h1>
+  <p>The hamster has no lives left.</p>
+  <button onclick="location.reload()">Try again</button>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="fpa_game_32.js"></script>
+</body>
+</html>
