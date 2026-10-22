@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Hamster Cube Editor</title>
+<link rel="stylesheet" href="hc_editor_01.css">
+</head>
+<body>
+<header>
+  <input id="name" aria-label="Level name" placeholder="Level name" maxlength="40" autocomplete="off">
+  <select id="size" aria-label="Cube size"></select>
+  <button id="menuBtn" class="icon" aria-label="Menu" aria-expanded="false">☰</button>
+</header>
+<div id="menu" class="hide" role="menu">
+  <button data-act="new">New level</button>
+  <button data-act="open">Open level file</button>
+  <button data-act="example">Open example: Twist &amp; Turn</button>
+  <button data-act="export">Save level file</button>
+  <button data-act="copy">Copy level text</button>
+  <a href="hc_index_01.html">Go to the game</a>
+  <input type="file" id="fileIn" accept=".json,application/json" hidden>
+</div>
+
+<div id="view3d" aria-label="3D view of the cube. Drag to turn it."></div>
+
+<div class="bar" id="layerBar">
+  <div class="group" id="axisBtns" role="group" aria-label="Which walls you build on">
+    <button data-axis="1">Y</button><button data-axis="0">X</button><button data-axis="2">Z</button>
+  </div>
+  <div class="group">
+    <button id="layerDown" class="icon" aria-label="Layer down">−</button>
+    <span id="layerTxt">Layer 1</span>
+    <button id="layerUp" class="icon" aria-label="Layer up">+</button>
+  </div>
+  <button id="floorBtn" aria-label="Floor side">Floor −Y</button>
+</div>
+
+<canvas id="grid" aria-label="The layer seen as a grid. Draw corridors with your finger."></canvas>
+
+<div class="bar tools" id="tools" role="group" aria-label="Tools">
+  <button data-tool="draw">✏️<span>Corridor</span></button>
+  <button data-tool="erase">🧽<span>Erase</span></button>
+  <button data-tool="link">⭕<span>Hole/Shaft</span></button>
+  <button data-tool="start">🐹<span>Start</span></button>
+  <button data-tool="exit">🏁<span>Exit</span></button>
+  <button id="newSeg">＋<span>New</span></button>
+</div>
+<p id="status" role="status"></p>
+<div class="bar" id="bottom">
+  <button id="checkBtn" class="ghost">Check</button>
+  <button id="playBtn">▶ Play test</button>
+</div>
+<div id="issues" class="hide"></div>
+
+<div class="ov hide" id="exportDlg" role="dialog" aria-label="Save level file">
+  <div class="box">
+    <h2>Save level file</h2>
+    <label>Level number <input id="exNum" type="number" min="1" max="99" inputmode="numeric"></label>
+    <label>Version <input id="exVer" type="number" min="1" max="99" inputmode="numeric"></label>
+    <p id="exFile" class="mono"></p>
+    <p class="note">A changed level gets a new version number, so that no file in the game is ever overwritten. The game always plays the highest version.</p>
+    <div class="row"><button id="exCancel" class="ghost">Cancel</button><button id="exSave">Save</button></div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="hc_editor_01.js"></script>
+</body>
+</html>
