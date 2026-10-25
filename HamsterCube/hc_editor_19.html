@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Hamster Cube Editor</title>
+<link rel="stylesheet" href="hc_editor_15.css">
+</head>
+<body>
+<header>
+  <input id="name" aria-label="Level name" placeholder="Level name" maxlength="40" autocomplete="off">
+  <button id="undoBtn" class="icon" aria-label="Undo" disabled>↶</button>
+  <button id="redoBtn" class="icon" aria-label="Redo" disabled>↷</button>
+  <select id="size" aria-label="Cube size"></select>
+  <button id="menuBtn" class="icon" aria-label="Menu" aria-expanded="false">☰</button>
+</header>
+<div id="menu" class="hide" role="menu">
+  <button data-act="new">New level</button>
+  <button data-act="open">Open level file</button>
+  <button data-act="example">Open example: Twist &amp; Turn</button>
+  <button data-act="export">Save level file</button>
+  <button data-act="copy">Copy level text</button>
+  <a href="hc_index_18.html">Go to the game</a>
+  <input type="file" id="fileIn" accept=".json,application/json" hidden>
+</div>
+
+<div id="view3d" aria-label="3D view of the cube. Drag to turn it."></div>
+
+<div class="bar" id="layerBar">
+  <div class="group" id="axisBtns" role="group" aria-label="Which walls you build on">
+    <button data-axis="1">Y</button><button data-axis="0">X</button><button data-axis="2">Z</button>
+  </div>
+  <div class="group">
+    <button id="layerDown" class="icon" aria-label="Layer down">−</button>
+    <span id="layerTxt">Layer 1</span>
+    <button id="layerUp" class="icon" aria-label="Layer up">+</button>
+  </div>
+  <button id="floorBtn" aria-label="Floor side">Floor −Y</button>
+  <button id="wallsBtn" aria-label="Walls of the chosen corridor">🧱 Walls</button>
+</div>
+
+<canvas id="grid" aria-label="The layer seen as a grid. Draw corridors with your finger."></canvas>
+
+<div class="bar tools" id="tools" role="group" aria-label="Tools">
+  <button data-tool="draw">✏️<span>Corridor</span></button>
+  <button data-tool="erase">🧽<span>Erase</span></button>
+  <button data-tool="startexit">🐹<span>Start/Exit</span></button>
+  <button data-tool="items">🌻<span>Items</span></button>
+  <button data-tool="paths">↪️<span>Paths</span></button>
+  <button data-tool="enemies">👹<span>Enemies</span></button>
+  <button data-tool="power">⚡<span>Power</span></button>
+  <button data-tool="puzzle">🧩<span>Puzzle</span></button>
+</div>
+<div class="bar chips hide" id="seBar" role="group" aria-label="Start or exit">
+  <button data-se="start">🐹 Start</button>
+  <button data-se="exit">🏁 Exit</button>
+</div>
+<div class="bar chips hide" id="pathBar" role="group" aria-label="Curve or tube">
+  <button data-path="curve">↪️ Curve</button>
+  <button data-path="tube">🧪 Tube</button>
+</div>
+<div class="bar chips hide" id="enemyBar" role="group" aria-label="Gate or grey hamster">
+  <button data-enemy="gate">🚪 Gate</button>
+  <button data-enemy="grey">🐹 Grey hamster</button>
+</div>
+<div class="bar chips hide" id="powerBar" role="group" aria-label="Wheel, door or lift">
+  <button data-power="wheel">🎡 Wheel</button>
+  <button data-power="door">🔥 Door</button>
+  <button data-power="lift">🛗 Lift</button>
+</div>
+<div class="bar chips hide" id="puzzleBar" role="group" aria-label="Puzzle pieces">
+  <button data-puzzle="button">🔘 Button</button>
+  <button data-puzzle="grate">🚧 Gate</button>
+  <button data-puzzle="box">📦 Box</button>
+  <button data-puzzle="bdoor">🔒 Ball door</button>
+  <button data-puzzle="key">🔑 Key</button>
+</div>
+<div class="bar chips hide" id="itemBar" role="group" aria-label="Item to place">
+  <button data-item="seed">🌻 Seed</button>
+  <button data-item="blue">🔵 Blue hole</button>
+  <button data-item="hole">⬇️ Big hole</button>
+  <button data-item="shaft">🔼 Shaft</button>
+  <button data-item="gap">⬛ Gap</button>
+  <button data-item="red">🔴 Red hole</button>
+  <button data-item="wide">⭕ Wide red</button>
+  <button data-item="crack">✶ Cracked</button>
+  <button data-item="sign">🪧 Sign</button>
+  <button data-item="machine">⚙️ Seed machine</button>
+</div>
+<div class="bar hide" id="signPanel" role="group" aria-label="The chosen sign">
+  <input id="signText" maxlength="16" placeholder="SIGN TEXT" aria-label="Sign text" autocomplete="off">
+  <div class="group">
+    <button data-arrow="left" class="ghost" aria-label="Arrow to the left">←</button>
+    <button data-arrow="right" class="ghost" aria-label="Arrow to the right">→</button>
+    <button id="signDel" class="ghost" aria-label="Remove the sign">🗑</button>
+  </div>
+</div>
+<p id="status" role="status"></p>
+<div class="bar" id="bottom">
+  <button id="checkBtn" class="ghost">Check</button>
+  <button id="playBtn">▶ Play test</button>
+</div>
+<div id="issues" class="hide"></div>
+
+<div class="ov hide" id="exportDlg" role="dialog" aria-label="Save level file">
+  <div class="box">
+    <h2>Save level file</h2>
+    <label>Level number <input id="exNum" type="number" min="1" max="99" inputmode="numeric"></label>
+    <label>Version <input id="exVer" type="number" min="1" max="99" inputmode="numeric"></label>
+    <p id="exFile" class="mono"></p>
+    <p class="note">A changed level gets a new version number, so that no file in the game is ever overwritten. The game always plays the highest version.</p>
+    <div class="row"><button id="exCancel" class="ghost">Cancel</button><button id="exSave">Save</button></div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="hc_editor_19.js"></script>
+</body>
+</html>
